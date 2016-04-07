@@ -1,0 +1,90 @@
+#! /usr/bin/env stap
+
+global ifxmit_a, ifxmit_b, ifrecv_a, ifrecv_b
+global ifmerged
+global cadence = 0
+
+probe netdev.transmit
+{
+	if (cadence == 0) {
+		ifxmit_a[dev_name] <<< length
+	}
+	else
+	{
+		ifxmit_b[dev_name] <<< length
+	}
+}
+
+probe netdev.receive
+{
+	if (cadence == 0) {
+		ifrecv_a[dev_name] <<< length
+	}
+	else
+	{
+		ifrecv_b[dev_name] <<< length
+	}
+}
+
+function print_a()
+{
+  printf("timestamp: %d\n%-7s %7s %7s %7s %7s %7s %7s\n",
+    gettimeofday_us(), "DEV", "XMIT_PK", "RECV_PK",
+    "XMIT_KB", "RECV_KB", "XMIT_MSS_KB", "RECV_MSS_KB")
+  foreach ([dev] in ifrecv_a) {
+    ifmerged[dev] += @count(ifrecv_a[dev]);
+  }
+  foreach ([dev] in ifxmit_a) {
+    ifmerged[dev] += @count(ifxmit_a[dev]);
+  }
+  foreach ([dev] in ifmerged-) {
+    n_xmit = @count(ifxmit_a[dev])
+    n_recv = @count(ifrecv_a[dev])
+    xmit_KB = n_xmit ? @sum(ifxmit_a[dev])/1024 : 0
+    recv_KB = n_recv ? @sum(ifrecv_a[dev])/1024 : 0
+    xmit_mss = n_xmit ? @sum(ifxmit_a[dev])/1024/n_xmit : 0
+    recv_mss = n_recv ? @sum(ifrecv_a[dev])/1024/n_recv : 0
+    printf("%-7s %7d %7d %7d %7d %7d %7d\n\n",
+      dev, n_xmit, n_recv, xmit_KB, recv_KB, xmit_mss, recv_mss)
+  } 
+  delete ifmerged
+  delete ifxmit_a
+  delete ifrecv_a
+}
+
+function print_b()
+{
+  printf("timestamp: %d\n%-7s %7s %7s %7s %7s %7s %7s\n",
+    gettimeofday_us(), "DEV", "XMIT_PK", "RECV_PK",
+    "XMIT_KB", "RECV_KB", "XMIT_MSS_KB", "RECV_MSS_KB")
+  foreach ([dev] in ifrecv_b) {
+    ifmerged[dev] += @count(ifrecv_b[dev]);
+  }
+  foreach ([dev] in ifxmit_b) {
+    ifmerged[dev] += @count(ifxmit_b[dev]);
+  }
+  foreach ([dev] in ifmerged-) {
+    n_xmit = @count(ifxmit_b[dev])
+    n_recv = @count(ifrecv_b[dev])
+    xmit_KB = n_xmit ? @sum(ifxmit_b[dev])/1024 : 0
+    recv_KB = n_recv ? @sum(ifrecv_b[dev])/1024 : 0
+    xmit_mss = n_xmit ? @sum(ifxmit_b[dev])/1024/n_xmit : 0
+    recv_mss = n_recv ? @sum(ifrecv_b[dev])/1024/n_recv : 0
+    printf("%-7s %7d %7d %7d %7d %7d %7d\n\n",
+      dev, n_xmit, n_recv, xmit_KB, recv_KB, xmit_mss, recv_mss)
+  } 
+  delete ifmerged
+  delete ifxmit_b
+  delete ifrecv_b
+}
+
+probe timer.ms(500), end, error
+{
+	if (cadence == 1) {
+#print_a()
+		cadence = 0
+	} else {
+#print_b()
+		cadence = 1
+	}
+}
