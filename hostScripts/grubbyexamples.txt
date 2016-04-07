@@ -1,0 +1,5 @@
+grubby --update-kernel=`grubby --default-kernel` --args="intel_iommu=on iommu=pt"
+grubby --update-kernel=`grubby --default-kernel` --args="default_hugepagesz=2M hugepagesz=2M hugepages=32"
+grubby --update-kernel=`grubby --default-kernel` --args="default_hugepagesz=1G hugepagesz=1G hugepages=4"
+grubby --update-kernel=`grubby --default-kernel` --remove-args="ommu"
+grubby --update-kernel=`grubby --default-kernel` --remove-args="isolcpus"

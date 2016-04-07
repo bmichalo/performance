@@ -1,0 +1,238 @@
+#!/bin/bash
+
+#
+# Current OVS packet throughput testing comes in several different forms.  Test descriptions will include the 
+# following nomenclature:
+#
+# Example 1:
+#   {(PP)} ............. Bridge 1:  (port1 = 10Gbps, port2 = 10Gbps)
+#
+# Example 2:
+#   {(PV),(VP)} ........ Bridge 1:  (port1 = 10Gb, port2 = virtio)
+#                        Bridge 2:  (port3 = virtio, port4 = 10Gbps)
+#
+# Example 3:
+#   {(PV),(VV)(VP)} .... Bridge1:  (port1 = 10Gbps, port2 = virtio)
+#                        Bridge2:  (port3 = virtio, port4 = virtio)
+#                        Bridge3:  (port5 = virtio, port6 = 10Gbps)
+#
+#
+# Test Cases:
+#
+# I.    {(PP)} - Bridge 1:  (port1 = 10Gbps, port2 = 10Gbps)
+#
+#       P_dataplane = kernel
+#       V_dataplane = N/A
+#
+#       UNIDIRECTIONAL PACKET PATH:
+#           1.  Packets input physical device A and RX into OVS
+#           2.  Packets forwarded via host machine virtual switch 'OVS + Linux kernel' bridging physical interfaces A and B
+#           3.  Packets TX from OVS and out physical device B
+#
+#       Note:  BIDIRECTIONAL packet path includes the above and additionally packets traversed into physical device B,
+#              through the DUT, and out device A (steps 3, 2, 1)
+#
+#
+# II.   {(PP)} - Bridge 1:  (port1 = 10Gbps, port2 = 10Gbps)
+#
+#       P_dataplane = dpdk
+#       V_dataplane = N/A
+#
+#       UNIDIRECTIONAL PACKET PATH:
+#           1.  Packets input physical device A and RX into OVS
+#           2.  Packets forwarded via host machine virtual switch 'OVS + dpdk' bridging physical interfaces A and B
+#           3.  Packets TX from OVS and out physical device B
+#
+#       Note:  BIDIRECTIONAL packet path includes the above and additionally packets traversed into physical device B,
+#              through the DUT, and out device A (steps 3, 2, 1)
+#
+#
+# III.  {(PV),(VP)} - Bridge 1:  (port1 = 10Gbps, port2 = virtio)
+#                     Bridge 2:  (port3 = virtio, port4 = 10Gbps)
+#
+#       P_dataplane = kernel
+#       V_dataplane = kernel
+#
+#       UNIDIRECTIONAL PACKET PATH:
+#           1.  Packets input physical device A and RX into OVS
+#           2.  Packets forwarded via host machine virtual switch 'OVS + kernel' bridging one physical interface and one virtual interface
+#           3.  Packets in virtual machine vm1 will be bridged amongst two virtual interfaces
+#           4.  Packets TX to host machine virtual switch 'OVS + kernel' bridging one virtual interface and one physical interface
+#           5.  Packets TX from OVS and out physical device B
+#
+#       Note:  BIDIRECTIONAL packet path includes the above and additionally packets traversed into physical device B,
+#              through the DUT, and out device A (steps 5 through 1)
+#
+#
+# IV.   {(PV),(VP)} - Bridge 1:  (port1 = 10Gbps, port2 = virtio)
+#                     Bridge 2:  (port3 = virtio, port4 = 10Gbps)
+#
+#       P_dataplane = dpdk
+#       V_dataplane = dpdk
+#
+#       UNIDIRECTIONAL PACKET PATH:
+#           1.  Packets input physical device A and RX into OVS
+#           2.  Packets forwarded via host machine virtual switch 'OVS + kernel' bridging one physical interface and one virtual interface
+#           3.  Packets in virtual machine vm1 will be bridged amongst two virtual interfaces
+#           4.  Packets TX to host machine virtual switch 'OVS + kernel' bridging one virtual interface and one physical interface
+#           5.  Packets TX from OVS and out physical device B
+#
+#       Note:  BIDIRECTIONAL packet path includes the above and additionally packets traversed into physical device B,
+#              through the DUT, and out device A (steps 5 through 1)
+#
+#
+#
+# V.   {(PV),(VP),(PV),(VP)} -Bridge 1:  (port1 = 10Gbps, port2 = virtio) 
+#                             Bridge 2:  (port3 = virtio, port4 = 10Gbps) 
+#                             Bridge 3:  (port5 = 10Gbps, port6 = virtio)
+#                             Bridge 4:  (port7 = virtio, port8 = 10Gbps)
+#
+#       P_dataplane = kernel
+#       V_dataplane = kernel
+#
+#       UNIDIRECTIONAL PACKET PATH:
+#
+#       PACKET PATH:
+#           1.  Packets in physical device A
+#           2.  Packets forwarded via host machine virtual switch 'OVS + kernel' bridging one physical interface and one virtual interface
+#           3.  Packets in virtual machine vm1 will be bridged amongst two virtual interfaces
+#           4.  Packets TX to host machine virtual switch 'OVS + kernel' bridging one virtual interface and one physical interface
+#           5.  Packets forwarded via host machine virtual switch 'OVS + kernel' bridging one physical interface and one virtual interface
+#           6.  Packets in virtual machine vm2 will be bridged amongst two virtual interfaces
+#           7.  Packets TX to host machine virtual switch 'OVS + kernel' bridging one virtual interface and one physical interface
+#           8.  Packets TX from OVS and out physical device B
+#
+#       Note:  BIDIRECTIONAL packet path includes the above and additionally packets traversed into physical device B,
+#              through the DUT, and out device A (steps 8 through 1)
+#
+#
+# VI.  {(PV),(VP),(PV),(VP)} -Bridge 1:  (port1 = 10Gbps, port2 = virtio) 
+#                             Bridge 2:  (port3 = virtio, port4 = 10Gbps) 
+#                             Bridge 3:  (port5 = 10Gbps, port6 = virtio)
+#                             Bridge 4:  (port7 = virtio, port8 = 10Gbps)
+#
+#       P_dataplane = dpdk
+#       V_dataplane = dpdk
+#
+#       UNIDIRECTIONAL PACKET PATH:
+#
+#       PACKET PATH:
+#           1.  Packets in physical device A
+#           2.  Packets forwarded via host machine virtual switch 'OVS + kernel' bridging one physical interface and one virtual interface
+#           3.  Packets in virtual machine vm1 will be bridged amongst two virtual interfaces
+#           4.  Packets TX to host machine virtual switch 'OVS + kernel' bridging one virtual interface and one physical interface
+#           5.  Packets forwarded via host machine virtual switch 'OVS + kernel' bridging one physical interface and one virtual interface
+#           6.  Packets in virtual machine vm2 will be bridged amongst two virtual interfaces
+#           7.  Packets TX to host machine virtual switch 'OVS + kernel' bridging one virtual interface and one physical interface
+#           8.  Packets TX from OVS and out physical device B
+#
+#       Note:  BIDIRECTIONAL packet path includes the above and additionally packets traversed into physical device B,
+#              through the DUT, and out device A (steps 8 through 1)
+#
+
+
+#prefix="/usr/local" # used with locally built src
+prefix=""  # used with RPMs
+
+vhost="user" # can be user or cuse
+eth_model="82599ES" # use XL710 for 40Gb
+
+export DB_SOCK="$prefix/var/run/openvswitch/db.sock"
+network_topology="{(PP)}" 
+#network_topology="{(PV),(VP)}"
+#network_topology="{(PV),(VP),(PV),(VP)}"
+
+P_dataplane=kernel
+#P_dataplane=dpdk
+#P_dataplane=none
+V_dataplane=kernel
+#V_dataplane=dpdk
+#V_dataplane=none
+
+if1=em1
+if2=em2
+
+
+echo $P_dataplane
+echo $V_dataplane
+
+#
+# Completely remove old OVS configuration
+#
+killall ovs-vswitchd
+killall ovsdb-server
+killall ovsdb-server ovs-vswitchd
+sleep 3
+rm -rf $prefix/var/run/openvswitch/ovs-vswitchd.pid
+rm -rf $prefix/var/run/openvswitch/ovsdb-server.pid
+rm -rf $prefix/var/run/openvswitch/*
+rm -rf $prefix/etc/openvswitch/*db*
+rm -rf $prefix/var/log/openvswitch/*
+modprobe -r openvswitch
+
+
+#
+# Process and execute test
+#
+case $network_topology in
+    "{(PP)}")
+        if [[ "kernel" == $P_dataplane ]] && [[ "kernel" == $V_dataplane ]]; then
+            message="{(PP)}: P_dataplane=kernel, V_dataplane=kernel"
+
+            #
+            # start new ovs
+            #
+            modprobe openvswitch
+            mkdir -p $prefix/var/run/openvswitch
+            mkdir -p $prefix/etc/openvswitch
+            $prefix/bin/ovsdb-tool create $prefix/etc/openvswitch/conf.db /usr/share/openvswitch/vswitch.ovsschema
+            
+            rm -rf /dev/usvhost-1
+            $prefix/sbin/ovsdb-server -v --remote=punix:$DB_SOCK \
+                --remote=db:Open_vSwitch,Open_vSwitch,manager_options \
+                --pidfile --detach || exit 1
+            
+            
+            $prefix/bin/ovs-vsctl --no-wait init
+            $prefix/sbin/ovs-vswitchd --pidfile --detach
+
+	    # create the bridges/ports with 1 phys dev and 1 virt dev per bridge, to be used for 1 VM to forward packets
+	    $prefix/bin/ovs-vsctl --if-exists del-br ovsbr0
+	    $prefix/bin/ovs-vsctl add-br ovsbr0
+	    $prefix/bin/ovs-vsctl add-port ovsbr0 $if1
+	    #$prefix/bin/ovs-vsctl add-port ovsbr0 vhost-user1
+	    $prefix/bin/ovs-ofctl del-flows ovsbr0
+	    #$prefix/bin/ovs-ofctl add-flow ovsbr0 "in_port=1,idle_timeout=0 actions=output:2"
+	    #$prefix/bin/ovs-ofctl add-flow ovsbr0 "in_port=2,idle_timeout=0 actions=output:1"
+	    
+	    $prefix/bin/ovs-vsctl --if-exists del-br ovsbr1
+	    $prefix/bin/ovs-vsctl add-br ovsbr1
+	    $prefix/bin/ovs-vsctl add-port ovsbr1 $if2
+	    #$prefix/bin/ovs-vsctl add-port ovsbr1 vhost-user2
+	    $prefix/bin/ovs-ofctl del-flows ovsbr1
+	    #$prefix/bin/ovs-ofctl add-flow ovsbr1 "in_port=1,idle_timeout=0 actions=output:2"
+	    #$prefix/bin/ovs-ofctl add-flow ovsbr1 "in_port=2,idle_timeout=0 actions=output:1"
+        else
+            message="You big dummy"
+        fi
+        ;;
+    "{(PV),(VP)}")
+        message="You stink"
+        ;;
+    "{(PV),(VP),(PV),(VP)}")
+        message="Try coding something correctly"
+        ;;
+    *)
+        message="A total loser"
+        ;;
+esac
+
+echo $message
+
+exit
+
+
+
+
+
+

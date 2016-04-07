@@ -1,0 +1,33 @@
+_uuid               : c5820d78-294b-4345-9ec6-6255e5e8c78e
+admin_state         : down
+bfd                 : {}
+bfd_status          : {}
+cfm_fault           : []
+cfm_fault_status    : []
+cfm_flap_count      : []
+cfm_health          : []
+cfm_mpid            : []
+cfm_remote_mpids    : []
+cfm_remote_opstate  : []
+duplex              : []
+error               : []
+external_ids        : {}
+ifindex             : 0
+ingress_policing_burst: 0
+ingress_policing_rate: 0
+lacp_current        : []
+link_resets         : 1
+link_speed          : []
+link_state          : down
+lldp                : {}
+mac                 : []
+mac_in_use          : "00:00:00:00:00:00"
+mtu                 : 1500
+name                : "vhost-user1"
+ofport              : 2
+ofport_request      : []
+options             : {}
+other_config        : {}
+statistics          : {rx_bytes=0, rx_errors=0, rx_packets=0, tx_bytes=0, tx_dropped=3656204371, tx_packets=0}
+status              : {}
+type                : dpdkvhostuser

@@ -1,0 +1,138 @@
+<domain type='kvm' id='2'>
+  <name>vm1</name>
+  <uuid>34d85fe9-037b-4468-8191-0a461b812805</uuid>
+  <memory unit='KiB'>4194304</memory>
+  <currentMemory unit='KiB'>4194304</currentMemory>
+  <memoryBacking>
+    <hugepages>
+      <page size='1048576' unit='KiB'/>
+    </hugepages>
+  </memoryBacking>
+  <vcpu placement='static' cpuset='16,18,20,22'>4</vcpu>
+  <cputune>
+    <vcpupin vcpu='0' cpuset='22'/>
+    <vcpupin vcpu='1' cpuset='20'/>
+    <vcpupin vcpu='2' cpuset='18'/>
+    <vcpupin vcpu='3' cpuset='16'/>
+    <emulatorpin cpuset='12,14'/>
+  </cputune>
+  <numatune>
+    <memory mode='strict' nodeset='0'/>
+  </numatune>
+  <resource>
+    <partition>/machine</partition>
+  </resource>
+  <os>
+    <type arch='x86_64' machine='pc-i440fx-rhel7.1.0'>hvm</type>
+    <boot dev='hd'/>
+  </os>
+  <features>
+    <acpi/>
+    <apic/>
+  </features>
+  <cpu mode='host-passthrough'>
+    <numa>
+      <cell id='0' cpus='0-3' memory='4194304' unit='KiB' memAccess='shared'/>
+    </numa>
+  </cpu>
+  <clock offset='utc'>
+    <timer name='rtc' tickpolicy='catchup'/>
+    <timer name='pit' tickpolicy='delay'/>
+    <timer name='hpet' present='no'/>
+  </clock>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>restart</on_crash>
+  <devices>
+    <emulator>/usr/libexec/qemu-kvm</emulator>
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2'/>
+      <source file='/var/lib/libvirt/images/current/vm1.qcow2'/>
+      <backingStore type='file' index='1'>
+        <format type='raw'/>
+        <source file='/var/lib/libvirt/images/current/./master.qcow2'/>
+        <backingStore/>
+      </backingStore>
+      <target dev='vda' bus='virtio'/>
+      <alias name='virtio-disk0'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x04' function='0x0'/>
+    </disk>
+    <controller type='usb' index='0' model='ich9-ehci1'>
+      <alias name='usb'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x7'/>
+    </controller>
+    <controller type='usb' index='0' model='ich9-uhci1'>
+      <alias name='usb'/>
+      <master startport='0'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0' multifunction='on'/>
+    </controller>
+    <controller type='usb' index='0' model='ich9-uhci2'>
+      <alias name='usb'/>
+      <master startport='2'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x1'/>
+    </controller>
+    <controller type='usb' index='0' model='ich9-uhci3'>
+      <alias name='usb'/>
+      <master startport='4'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x2'/>
+    </controller>
+    <controller type='pci' index='0' model='pci-root'>
+      <alias name='pci.0'/>
+    </controller>
+    <interface type='bridge'>
+      <mac address='52:54:00:2b:61:8b'/>
+      <source bridge='br-em3'/>
+      <target dev='vnet0'/>
+      <model type='virtio'/>
+      <alias name='net0'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x02' function='0x0'/>
+    </interface>
+    <interface type='bridge'>
+      <mac address='52:54:00:67:4e:0e'/>
+      <source bridge='ovsbr0'/>
+      <virtualport type='openvswitch'>
+        <parameters interfaceid='5deab64f-74b2-460a-b22c-cf2f06796992'/>
+      </virtualport>
+      <target dev='vnet1'/>
+      <model type='virtio'/>
+      <driver name='vhost' queues='4'/>
+      <alias name='net1'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/>
+    </interface>
+    <interface type='bridge'>
+      <mac address='52:54:00:45:0e:a8'/>
+      <source bridge='ovsbr1'/>
+      <virtualport type='openvswitch'>
+        <parameters interfaceid='34291e2e-7fa0-489c-8653-3ed3071b2ee6'/>
+      </virtualport>
+      <target dev='vnet2'/>
+      <model type='virtio'/>
+      <driver name='vhost' queues='4'/>
+      <alias name='net2'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x0'/>
+    </interface>
+    <serial type='pty'>
+      <source path='/dev/pts/1'/>
+      <target port='0'/>
+      <alias name='serial0'/>
+    </serial>
+    <serial type='file'>
+      <source path='/tmp/vm1.console'/>
+      <target port='1'/>
+      <alias name='serial1'/>
+    </serial>
+    <console type='pty' tty='/dev/pts/1'>
+      <source path='/dev/pts/1'/>
+      <target type='serial' port='0'/>
+      <alias name='serial0'/>
+    </console>
+    <input type='tablet' bus='usb'>
+      <alias name='input0'/>
+    </input>
+    <memballoon model='virtio'>
+      <alias name='balloon0'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x0'/>
+    </memballoon>
+  </devices>
+</domain>
+

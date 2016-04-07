@@ -1,0 +1,347 @@
+
+
+cat /proc/cmdline #############
+
+
+BOOT_IMAGE=/vmlinuz-3.10.0-229.el7.x86_64 root=/dev/mapper/rhel_perf54-root ro rd.lvm.lv=rhel_perf54/swap rd.lvm.lv=rhel_perf54/root rhgb quiet LANG=en_US.UTF-8
+
+
+uname -a #############
+
+
+Linux perf54.perf.lab.eng.bos.redhat.com 3.10.0-229.el7.x86_64 #1 SMP Thu Jan 29 18:37:38 EST 2015 x86_64 x86_64 x86_64 GNU/Linux
+
+
+Services #############
+
+
+UNIT                                  LOAD   ACTIVE   SUB     DESCRIPTION
+abrt-ccpp.service                     loaded active   exited  Install ABRT coredump hook
+abrt-oops.service                     loaded active   running ABRT kernel log watcher
+abrt-vmcore.service                   loaded inactive dead    Harvest vmcores for ABRT
+abrt-xorg.service                     loaded inactive dead    ABRT Xorg log watcher
+abrtd.service                         loaded active   running ABRT Automated Bug Reporting Tool
+atd.service                           loaded active   running Job spooling tools
+auditd.service                        loaded active   running Security Auditing Service
+brandbot.service                      loaded inactive dead    Flexible Branding Service
+chronyd.service                       loaded active   running NTP client/server
+cpupower.service                      loaded inactive dead    Configure CPU power related settings
+crond.service                         loaded active   running Command Scheduler
+dbus.service                          loaded active   running D-Bus System Message Bus
+display-manager.service               not-found inactive dead    display-manager.service
+dm-event.service                      loaded inactive dead    Device-mapper event daemon
+dmraid-activation.service             loaded inactive dead    Activation of DM RAID sets
+dracut-shutdown.service               loaded inactive dead    Restore /run/initramfs
+ebtables.service                      loaded inactive dead    Ethernet Bridge Filtering tables
+emergency.service                     loaded inactive dead    Emergency Shell
+exim.service                          not-found inactive dead    exim.service
+firewalld.service                     loaded active   running firewalld - dynamic firewall daemon
+getty@tty1.service                    loaded active   running Getty on tty1
+ip6tables.service                     not-found inactive dead    ip6tables.service
+iptables.service                      not-found inactive dead    iptables.service
+irqbalance.service                    loaded active   running irqbalance daemon
+kdump.service                         loaded inactive dead    Crash recovery kernel arming
+kmod-static-nodes.service             loaded active   exited  Create list of required static device nodes for the current kernel
+libstoragemgmt.service                loaded active   running libstoragemgmt plug-in server daemon
+libvirtd.service                      not-found inactive dead    libvirtd.service
+livesys.service                       not-found inactive dead    livesys.service
+lvm2-activation-early.service         not-found inactive dead    lvm2-activation-early.service
+lvm2-activation.service               not-found inactive dead    lvm2-activation.service
+lvm2-lvmetad.service                  loaded active   running LVM2 metadata daemon
+lvm2-monitor.service                  loaded active   exited  Monitoring of LVM2 mirrors, snapshots etc. using dmeventd or progress polling
+lvm2-pvscan@8:17.service              loaded active   exited  LVM2 PV scan on device 8:17
+lvm2-pvscan@8:2.service               loaded active   exited  LVM2 PV scan on device 8:2
+mdmonitor.service                     loaded inactive dead    Software RAID monitoring and management
+microcode.service                     loaded inactive dead    Load CPU microcode update
+netconsole.service                    loaded inactive dead    SYSV: Initializes network console logging
+network.service                       loaded failed   failed  LSB: Bring up/down networking
+NetworkManager-wait-online.service    loaded inactive dead    Network Manager Wait Online
+NetworkManager.service                loaded active   running Network Manager
+ntpd.service                          not-found inactive dead    ntpd.service
+ntpdate.service                       loaded inactive dead    Set time via NTP
+plymouth-quit-wait.service            loaded inactive dead    Wait for Plymouth Boot Screen to Quit
+plymouth-quit.service                 loaded inactive dead    Terminate Plymouth Boot Screen
+plymouth-read-write.service           loaded inactive dead    Tell Plymouth To Write Out Runtime Data
+plymouth-start.service                loaded inactive dead    Show Plymouth Boot Screen
+polkit.service                        loaded active   running Authorization Manager
+postfix.service                       loaded active   running Postfix Mail Transport Agent
+rc-local.service                      loaded inactive dead    /etc/rc.d/rc.local Compatibility
+rdma.service                          loaded active   exited  Initialize the iWARP/InfiniBand/RDMA stack in the kernel
+rescue.service                        loaded inactive dead    Rescue Shell
+rhel-autorelabel-mark.service         loaded inactive dead    Mark the need to relabel after reboot
+rhel-autorelabel.service              loaded inactive dead    Relabel all filesystems, if necessary
+rhel-configure.service                loaded inactive dead    Reconfigure the system on administrator request
+rhel-dmesg.service                    loaded active   exited  Dump dmesg to /var/log/dmesg
+rhel-import-state.service             loaded active   exited  Import network configuration from initramfs
+rhel-loadmodules.service              loaded inactive dead    Load legacy module configuration
+rhel-readonly.service                 loaded active   exited  Configure read-only root support
+rhnsd.service                         loaded failed   failed  LSB: Starts the Spacewalk Daemon
+rhsmcertd.service                     loaded active   running Enable periodic update of entitlement certificates.
+rngd.service                          loaded failed   failed  Hardware RNG Entropy Gatherer Daemon
+rsyslog.service                       loaded active   running System Logging Service
+sendmail.service                      not-found inactive dead    sendmail.service
+smartd.service                        loaded active   running Self Monitoring and Reporting Technology (SMART) Daemon
+sntp.service                          not-found inactive dead    sntp.service
+sshd-keygen.service                   loaded active   exited  OpenSSH Server Key Generation
+sshd.service                          loaded active   running OpenSSH server daemon
+syslog.service                        not-found inactive dead    syslog.service
+sysstat.service                       loaded active   exited  Resets System Activity Logs
+systemd-ask-password-console.service  loaded inactive dead    Dispatch Password Requests to Console
+systemd-ask-password-plymouth.service loaded inactive dead    Forward Password Requests to Plymouth
+systemd-ask-password-wall.service     loaded inactive dead    Forward Password Requests to Wall
+systemd-binfmt.service                loaded inactive dead    Set Up Additional Binary Formats
+systemd-fsck-root.service             loaded inactive dead    File System Check on Root Device
+systemd-initctl.service               loaded inactive dead    /dev/initctl Compatibility Daemon
+systemd-journal-flush.service         loaded inactive dead    Trigger Flushing of Journal to Persistent Storage
+systemd-journald.service              loaded active   running Journal Service
+systemd-logind.service                loaded active   running Login Service
+systemd-modules-load.service          loaded inactive dead    Load Kernel Modules
+systemd-random-seed-load.service      not-found inactive dead    systemd-random-seed-load.service
+systemd-random-seed.service           loaded active   exited  Load/Save Random Seed
+systemd-readahead-collect.service     loaded active   exited  Collect Read-Ahead Data
+systemd-readahead-done.service        loaded inactive dead    Stop Read-Ahead Data Collection
+systemd-readahead-replay.service      loaded inactive dead    Replay Read-Ahead Data
+systemd-reboot.service                loaded inactive dead    Reboot
+systemd-remount-fs.service            loaded active   exited  Remount Root and Kernel File Systems
+systemd-shutdownd.service             loaded inactive dead    Delayed Shutdown Service
+systemd-sysctl.service                loaded active   exited  Apply Kernel Variables
+systemd-tmpfiles-clean.service        loaded inactive dead    Cleanup of Temporary Directories
+systemd-tmpfiles-setup-dev.service    loaded active   exited  Create static device nodes in /dev
+systemd-tmpfiles-setup.service        loaded active   exited  Create Volatile Files and Directories
+systemd-udev-settle.service           loaded active   exited  udev Wait for Complete Device Initialization
+systemd-udev-trigger.service          loaded active   exited  udev Coldplug all Devices
+systemd-udevd.service                 loaded active   running udev Kernel Device Manager
+systemd-update-utmp-runlevel.service  loaded inactive dead    Update UTMP about System Runlevel Changes
+systemd-update-utmp.service           loaded active   exited  Update UTMP about System Reboot/Shutdown
+systemd-user-sessions.service         loaded active   exited  Permit User Sessions
+systemd-vconsole-setup.service        loaded active   exited  Setup Virtual Console
+tuned.service                         loaded active   running Dynamic System Tuning Daemon
+
+LOAD   = Reflects whether the unit definition was properly loaded.
+ACTIVE = The high-level unit activation state, i.e. generalization of SUB.
+SUB    = The low-level unit activation state, values depend on unit type.
+
+100 loaded units listed.
+To show all installed unit files use 'systemctl list-unit-files'.
+
+
+modules #############
+
+
+Module                  Size  Used by
+ip6t_rpfilter          12546  1 
+ip6t_REJECT            12939  2 
+ipt_REJECT             12541  2 
+xt_conntrack           12760  7 
+ebtable_nat            12807  0 
+ebtable_broute         12731  0 
+bridge                115385  1 ebtable_broute
+stp                    12976  1 bridge
+llc                    14552  2 stp,bridge
+ebtable_filter         12827  0 
+ebtables               30913  3 ebtable_broute,ebtable_nat,ebtable_filter
+ip6table_nat           12864  1 
+nf_conntrack_ipv6      18738  5 
+nf_defrag_ipv6         34651  1 nf_conntrack_ipv6
+nf_nat_ipv6            14131  1 ip6table_nat
+ip6table_mangle        12700  1 
+ip6table_security      12710  1 
+ip6table_raw           12683  1 
+ip6table_filter        12815  1 
+ip6_tables             27025  5 ip6table_filter,ip6table_mangle,ip6table_security,ip6table_nat,ip6table_raw
+iptable_nat            12875  1 
+nf_conntrack_ipv4      14862  4 
+nf_defrag_ipv4         12729  1 nf_conntrack_ipv4
+nf_nat_ipv4            14115  1 iptable_nat
+nf_nat                 26146  2 nf_nat_ipv4,nf_nat_ipv6
+nf_conntrack          105702  6 nf_nat,nf_nat_ipv4,nf_nat_ipv6,xt_conntrack,nf_conntrack_ipv4,nf_conntrack_ipv6
+iptable_mangle         12695  1 
+iptable_security       12705  1 
+iptable_raw            12678  1 
+iptable_filter         12810  1 
+ip_tables              27239  5 iptable_security,iptable_filter,iptable_mangle,iptable_nat,iptable_raw
+xprtrdma               50777  0 
+sunrpc                295293  1 xprtrdma
+ib_isert               52779  0 
+iscsi_target_mod      283982  1 ib_isert
+ib_iser                51888  0 
+libiscsi               57278  1 ib_iser
+scsi_transport_iscsi    99909  2 ib_iser,libiscsi
+ib_srpt                52289  0 
+target_core_mod       303808  3 iscsi_target_mod,ib_srpt,ib_isert
+intel_powerclamp       18764  0 
+coretemp               13435  0 
+kvm                   461126  0 
+ib_srp                 42448  0 
+scsi_transport_srp     20725  1 ib_srp
+crct10dif_pclmul       14289  0 
+scsi_tgt               20027  1 scsi_transport_srp
+crc32_pclmul           13113  0 
+crc32c_intel           22079  0 
+ghash_clmulni_intel    13259  0 
+aesni_intel            52846  0 
+ib_ipoib               91504  0 
+lrw                    13286  1 aesni_intel
+gf128mul               14951  1 lrw
+glue_helper            13990  1 aesni_intel
+rdma_ucm               22568  0 
+ablk_helper            13597  1 aesni_intel
+ib_ucm                 22546  0 
+cryptd                 20359  3 ghash_clmulni_intel,aesni_intel,ablk_helper
+ib_uverbs              46826  2 ib_ucm,rdma_ucm
+ib_umad                22129  0 
+rdma_cm                43464  4 xprtrdma,ib_iser,rdma_ucm,ib_isert
+ib_cm                  42689  5 rdma_cm,ib_srp,ib_ucm,ib_srpt,ib_ipoib
+iw_cm                  36940  1 rdma_cm
+hpilo                  17381  0 
+hpwdt                  14242  0 
+iTCO_wdt               13480  0 
+iTCO_vendor_support    13718  1 iTCO_wdt
+serio_raw              13462  0 
+pcspkr                 12718  0 
+ipmi_si                53353  0 
+ipmi_msghandler        45603  1 ipmi_si
+shpchp                 37032  0 
+acpi_power_meter       18087  0 
+i7core_edac            24166  0 
+edac_core              57650  2 i7core_edac
+lpc_ich                21073  0 
+mfd_core               13435  1 lpc_ich
+acpi_cpufreq           19393  0 
+mlx4_ib               146227  0 
+mlx4_en                94530  0 
+ib_sa                  33950  6 rdma_cm,ib_cm,mlx4_ib,ib_srp,rdma_ucm,ib_ipoib
+ib_mad                 47486  5 ib_cm,ib_sa,mlx4_ib,ib_srpt,ib_umad
+vxlan                  37409  1 mlx4_en
+ip_tunnel              23760  1 vxlan
+ib_core                88311  16 rdma_cm,ib_cm,ib_sa,iw_cm,xprtrdma,mlx4_ib,ib_mad,ib_srp,ib_ucm,ib_iser,ib_srpt,ib_umad,ib_uverbs,rdma_ucm,ib_ipoib,ib_isert
+ptp                    18933  1 mlx4_en
+ib_addr                18923  3 rdma_cm,ib_core,rdma_ucm
+pps_core               19106  1 ptp
+xfs                   915019  2 
+libcrc32c              12644  1 xfs
+sd_mod                 45499  5 
+crc_t10dif             12714  1 sd_mod
+crct10dif_common       12595  2 crct10dif_pclmul,crc_t10dif
+radeon               1421005  1 
+i2c_algo_bit           13413  1 radeon
+drm_kms_helper         98226  1 radeon
+ttm                    93488  1 radeon
+drm                   311588  4 ttm,drm_kms_helper,radeon
+mlx4_core             254286  2 mlx4_en,mlx4_ib
+i2c_core               40325  4 drm,drm_kms_helper,i2c_algo_bit,radeon
+bnx2                   89257  0 
+hpsa                   89274  3 
+dm_mirror              22135  0 
+dm_region_hash         20862  1 dm_mirror
+dm_log                 18411  2 dm_region_hash,dm_mirror
+dm_mod                104038  9 dm_log,dm_mirror
+
+
+iptables -L --line-numbers #############
+
+
+Chain INPUT (policy ACCEPT)
+num  target     prot opt source               destination         
+1    ACCEPT     all  --  anywhere             anywhere             ctstate RELATED,ESTABLISHED
+2    ACCEPT     all  --  anywhere             anywhere            
+3    INPUT_direct  all  --  anywhere             anywhere            
+4    INPUT_ZONES_SOURCE  all  --  anywhere             anywhere            
+5    INPUT_ZONES  all  --  anywhere             anywhere            
+6    ACCEPT     icmp --  anywhere             anywhere            
+7    REJECT     all  --  anywhere             anywhere             reject-with icmp-host-prohibited
+
+Chain FORWARD (policy ACCEPT)
+num  target     prot opt source               destination         
+1    ACCEPT     all  --  anywhere             anywhere             ctstate RELATED,ESTABLISHED
+2    ACCEPT     all  --  anywhere             anywhere            
+3    FORWARD_direct  all  --  anywhere             anywhere            
+4    FORWARD_IN_ZONES_SOURCE  all  --  anywhere             anywhere            
+5    FORWARD_IN_ZONES  all  --  anywhere             anywhere            
+6    FORWARD_OUT_ZONES_SOURCE  all  --  anywhere             anywhere            
+7    FORWARD_OUT_ZONES  all  --  anywhere             anywhere            
+8    ACCEPT     icmp --  anywhere             anywhere            
+9    REJECT     all  --  anywhere             anywhere             reject-with icmp-host-prohibited
+
+Chain OUTPUT (policy ACCEPT)
+num  target     prot opt source               destination         
+1    OUTPUT_direct  all  --  anywhere             anywhere            
+
+Chain FORWARD_IN_ZONES (1 references)
+num  target     prot opt source               destination         
+1    FWDI_public  all  --  anywhere             anywhere            [goto] 
+2    FWDI_public  all  --  anywhere             anywhere            [goto] 
+
+Chain FORWARD_IN_ZONES_SOURCE (1 references)
+num  target     prot opt source               destination         
+
+Chain FORWARD_OUT_ZONES (1 references)
+num  target     prot opt source               destination         
+1    FWDO_public  all  --  anywhere             anywhere            [goto] 
+2    FWDO_public  all  --  anywhere             anywhere            [goto] 
+
+Chain FORWARD_OUT_ZONES_SOURCE (1 references)
+num  target     prot opt source               destination         
+
+Chain FORWARD_direct (1 references)
+num  target     prot opt source               destination         
+
+Chain FWDI_public (2 references)
+num  target     prot opt source               destination         
+1    FWDI_public_log  all  --  anywhere             anywhere            
+2    FWDI_public_deny  all  --  anywhere             anywhere            
+3    FWDI_public_allow  all  --  anywhere             anywhere            
+
+Chain FWDI_public_allow (1 references)
+num  target     prot opt source               destination         
+
+Chain FWDI_public_deny (1 references)
+num  target     prot opt source               destination         
+
+Chain FWDI_public_log (1 references)
+num  target     prot opt source               destination         
+
+Chain FWDO_public (2 references)
+num  target     prot opt source               destination         
+1    FWDO_public_log  all  --  anywhere             anywhere            
+2    FWDO_public_deny  all  --  anywhere             anywhere            
+3    FWDO_public_allow  all  --  anywhere             anywhere            
+
+Chain FWDO_public_allow (1 references)
+num  target     prot opt source               destination         
+
+Chain FWDO_public_deny (1 references)
+num  target     prot opt source               destination         
+
+Chain FWDO_public_log (1 references)
+num  target     prot opt source               destination         
+
+Chain INPUT_ZONES (1 references)
+num  target     prot opt source               destination         
+1    IN_public  all  --  anywhere             anywhere            [goto] 
+2    IN_public  all  --  anywhere             anywhere            [goto] 
+
+Chain INPUT_ZONES_SOURCE (1 references)
+num  target     prot opt source               destination         
+
+Chain INPUT_direct (1 references)
+num  target     prot opt source               destination         
+
+Chain IN_public (2 references)
+num  target     prot opt source               destination         
+1    IN_public_log  all  --  anywhere             anywhere            
+2    IN_public_deny  all  --  anywhere             anywhere            
+3    IN_public_allow  all  --  anywhere             anywhere            
+
+Chain IN_public_allow (1 references)
+num  target     prot opt source               destination         
+1    ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:ssh ctstate NEW
+
+Chain IN_public_deny (1 references)
+num  target     prot opt source               destination         
+
+Chain IN_public_log (1 references)
+num  target     prot opt source               destination         
+
+Chain OUTPUT_direct (1 references)
+num  target     prot opt source               destination         
