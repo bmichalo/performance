@@ -223,6 +223,7 @@ class Moongen(ITrafficGenerator):
             raise RuntimeError('MOONGEN: Error parsing MoonGen log file')
 
         string_aggregate_rx_mpps_stats = output.decode(encoding='UTF-8')
+        throughput_rx_fps = '{:,.6f}'.format(float(float(string_aggregate_rx_mpps_stats) * 1000000))
         print("MOONGEN:  Rx Mpps = %s string" % (string_aggregate_rx_mpps_stats))
         
 
@@ -235,14 +236,19 @@ class Moongen(ITrafficGenerator):
             raise RuntimeError('MOONGEN: Error parsing MoonGen log file')
 
         string_framesize = output.decode(encoding='UTF-8')
-
         string_mbps = (float(string_aggregate_rx_mpps_stats) * (float(string_framesize) + 20) * 8)
+        throughput_rx_mbps = '{:,.3f}'.format(float(string_mbps))
+
+        # Assume for now 10G link speed
+        max_theoretical_mfps = (10000000000 / 8) / (float(string_framesize) + 20)
+        #throughput_rx_percent = '{:,.2f}'.format((throughput_rx_fps / float(max_theoretical_mfps)) * 100)
+        throughput_rx_percent = '{:,.2f}'.format((float(string_aggregate_rx_mpps_stats) * 1000000 / max_theoretical_mfps) * 100)
+        #throughput_rx_percent = '{:,.2f}'.format((throughput_rx_fps / float(max_theoretical_mfps)) * 100)
 
         results = OrderedDict()
-        #results[ResultsConstants.THROUGHPUT_RX_FPS] = '{:20,.2f}'.format(float(float(string_aggregate_rx_mpps_stats) * 1000000))
-        results[ResultsConstants.THROUGHPUT_RX_FPS] = '{:,.6f}'.format(float(float(string_aggregate_rx_mpps_stats) * 1000000))
-        results[ResultsConstants.THROUGHPUT_RX_MBPS] = '{:,.6f}'.format(float(string_mbps))
-        results[ResultsConstants.THROUGHPUT_RX_PERCENT] = 0
+        results[ResultsConstants.THROUGHPUT_RX_FPS] = throughput_rx_fps
+        results[ResultsConstants.THROUGHPUT_RX_MBPS] = throughput_rx_mbps
+        results[ResultsConstants.THROUGHPUT_RX_PERCENT] = throughput_rx_percent
         results[ResultsConstants.TX_RATE_FPS] = 0
         results[ResultsConstants.TX_RATE_MBPS] = 0
         results[ResultsConstants.TX_RATE_PERCENT] = 0
