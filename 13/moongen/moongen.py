@@ -60,20 +60,24 @@ class Moongen(ITrafficGenerator):
     
     
     @staticmethod
-    def _create_moongen_cfg_file(run_bidirect="true", duration=60, acceptable_loss_pct=1,frame_size=64, ports={0,1}):
+    def _create_moongen_cfg_file(traffic, duration=60, acceptable_loss_pct=1):
         moongen_host_ip_addr = settings.getValue('TRAFFICGEN_MOONGEN_HOST_IP_ADDR')
         moongen_base_dir = settings.getValue('TRAFFICGEN_MOONGEN_BASE_DIR')
         moongen_user = settings.getValue('TRAFFICGEN_MOONGEN_USER')
-        
+        moongen_ports= settings.getValue('TRAFFICGEN_MOONGEN_PORTS')
+        print(traffic) 
+        print("traffic['l2']['framesize'] = ") 
+        print(traffic['l2']['framesize']) 
         out_file = open("opnfv-vsperf-cfg.lua", "wt")
         out_file.write("VSPERF {\n")
         out_file.write("testType = \"throughput\",\n")
-        out_file.write("runBidirec = " + run_bidirect + ",\n")
+        out_file.write("runBidirec = " + traffic['bidir'].lower() + ",\n")
         out_file.write("searchRunTime = " + str(duration) + ",\n")
         out_file.write("validationRunTime = " + str(duration) + ",\n")
         out_file.write("acceptableLossPct = " + str(acceptable_loss_pct) + ",\n")
-        out_file.write("frameSize = " + str(frame_size) + ",\n")
-        out_file.write("ports = " + str(ports) + "\n")
+        out_file.write("frameSize = " + str(traffic['l2']['framesize']) + ",\n")
+        out_file.write("ports = " + str(moongen_ports) + ",\n")
+        out_file.write("startRate = 4\n")
         out_file.write("}" + "\n")
         out_file.close()
         
@@ -276,8 +280,8 @@ class Moongen(ITrafficGenerator):
 
 
 
-    def send_rfc2544_throughput(self, traffic=None, run_bidirect="false", duration=20,
-                                lossrate=0.0, frame_size=64, ports={0,1}, trials=1):
+    def send_rfc2544_throughput(self, traffic=None, duration=20,
+                                lossrate=0.0, trials=1):
         #
         # Send traffic per RFC2544 throughput test specifications.
         #
@@ -301,16 +305,13 @@ class Moongen(ITrafficGenerator):
         #     - Avg Latency (ns)
         # 
         self._logger.info("In moongen send_rfc2544_throughput method")
-        print("BILL: self._params = ")
-        print(self._params)
         self._params.clear()
         self._params['traffic'] = self.traffic_defaults.copy()
-        print(self._params)
+
         if traffic:
             self._params['traffic'] = merge_spec(self._params['traffic'],
                                                  traffic)
-        print(self._params)
-        Moongen._create_moongen_cfg_file(run_bidirect=run_bidirect, duration=duration, acceptable_loss_pct=lossrate, frame_size=frame_size, ports=ports)
+        Moongen._create_moongen_cfg_file(traffic, duration=duration, acceptable_loss_pct=lossrate)
 
         collected_results = Moongen._run_moongen_and_collect_results()
 
@@ -355,9 +356,8 @@ class Moongen(ITrafficGenerator):
 
 
 
-    def send_rfc2544_back2back(self, traffic=None, run_bidirect="false", duration=60, 
-                               lossrate=0.002, frame_size=64, ports={0,1}, 
-                               trials=1):
+    def send_rfc2544_back2back(self, traffic=None, duration=60, 
+                               lossrate=0.002, trials=1):
         """Send traffic per RFC2544 back2back test specifications.
 
         Send packets at a fixed rate, using ``traffic``
@@ -372,13 +372,18 @@ class Moongen(ITrafficGenerator):
             Tx Rate (% linerate), Rx Rate (% linerate), Tx Count (frames),
             Back to Back Count (frames), Frame Loss (frames), Frame Loss (%)
         :rtype: :class:`Back2BackResult`
-        """
-        print(traffic)
         moongen_host_ip_addr = settings.getValue('TRAFFICGEN_MOONGEN_HOST_IP_ADDR')
         moongen_base_dir = settings.getValue('TRAFFICGEN_MOONGEN_BASE_DIR')
         moongen_user = settings.getValue('TRAFFICGEN_MOONGEN_USER')
+        """
+        self._params.clear()
+        self._params['traffic'] = self.traffic_defaults.copy()
 
-        Moongen._create_moongen_cfg_file(run_bidirect=run_bidirect, duration=duration, acceptable_loss_pct=lossrate, frame_size=frame_size, ports=ports)
+        if traffic:
+            self._params['traffic'] = merge_spec(self._params['traffic'],
+                                                 traffic)
+
+        Moongen._create_moongen_cfg_file(traffic, duration=duration, acceptable_loss_pct=lossrate)
 
         """
         copy_moongen_cfg = "scp opnfv-vsperf-cfg.lua " + moongen_user + "@" + moongen_host_ip_addr + ":" + moongen_base_dir + "/. && rm opnfv-vsperf-cfg.lua"
@@ -388,13 +393,14 @@ class Moongen(ITrafficGenerator):
         if error:
             raise RuntimeError('MOONGEN: Error copying configuration file')
 
-        """
-
         for i in range(trials):
             self._logger.info("In moongen send_rfc2544_back2back method")
             print("MOONGEN:  trials = %d" % trials)
             print("MOONGEN:  duration = %d" % duration)
 #            print("MOONGEN:  lossrate= %f" % lossrate)
+
+
+        """
 
         results = OrderedDict()
 
