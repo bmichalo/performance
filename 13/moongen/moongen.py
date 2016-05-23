@@ -66,7 +66,20 @@ class Moongen(ITrafficGenerator):
         moongen_user = settings.getValue('TRAFFICGEN_MOONGEN_USER')
         moongen_ports= settings.getValue('TRAFFICGEN_MOONGEN_PORTS')
         print(traffic) 
-        print("traffic['l2']['framesize'] = ") 
+        print("traffic['frame_rate'] = %s" % str(traffic['frame_rate'])) 
+        print("traffic['multistream'] = %s" % str(traffic['multistream'])) 
+        print("traffic['stream_type'] = %s" % str(traffic['stream_type'])) 
+        print("traffic['l2']['srcmac'] = %s" % str(traffic['l2']['srcmac'])) 
+        print("traffic['l2']['dstmac'] = %s" % str(traffic['l2']['dstmac'])) 
+        print("traffic['l3']['proto'] = %s" % str(traffic['l3']['proto'])) 
+        print("traffic['l3']['srcip'] = %s" % str(traffic['l3']['srcip'])) 
+        print("traffic['l3']['dstip'] = %s" % str(traffic['l3']['dstip'])) 
+        print("traffic['l4']['srcport'] = %s" % str(traffic['l4']['srcport'])) 
+        print("traffic['l4']['dstport'] = %s" % str(traffic['l4']['dstport'])) 
+        print("traffic['vlan']['enabled'] = %s" % str(traffic['vlan']['enabled'])) 
+        print("traffic['vlan']['id'] = %s" % str(traffic['vlan']['id'])) 
+        print("traffic['vlan']['priority'] = %s" % str(traffic['vlan']['priority'])) 
+        print("traffic['vlan']['cfi'] = %s" % str(traffic['vlan']['cfi'])) 
         print(traffic['l2']['framesize']) 
         out_file = open("opnfv-vsperf-cfg.lua", "wt")
         out_file.write("VSPERF {\n")
@@ -198,7 +211,7 @@ class Moongen(ITrafficGenerator):
 
 
     @staticmethod
-    def _run_moongen_and_collect_results():
+    def _run_moongen_and_collect_results(test_run=1):
         moongen_host_ip_addr = settings.getValue('TRAFFICGEN_MOONGEN_HOST_IP_ADDR')
         moongen_base_dir = settings.getValue('TRAFFICGEN_MOONGEN_BASE_DIR')
         moongen_user = settings.getValue('TRAFFICGEN_MOONGEN_USER')
@@ -214,8 +227,19 @@ class Moongen(ITrafficGenerator):
             raise RuntimeError('MOONGEN: Error starting MoonGen program at %s within %s' \
                     % (moongen_host_ip_addr, moongen_base_dir))
 
+        cmd_moongen = "mkdir -p /tmp/moongen/" + str(test_run)
+
+        moongen_create_log_dir = subprocess.Popen(cmd_moongen, shell=True, stderr=subprocess.PIPE)
+        output, error = moongen_create_log_dir.communicate()
+        print(output)
+
+        if error:
+            raise RuntimeError('MOONGEN: Error obtaining MoonGen log from %s within %s' \
+                    % (moongen_host_ip_addr, moongen_base_dir))
+
+
         cmd_moongen = " scp " + moongen_user + "@" + moongen_host_ip_addr + ":" + \
-                moongen_base_dir + "/moongen_log.txt /tmp/moongen-run.log"
+                moongen_base_dir + "/moongen_log.txt /tmp/moongen/" + str(test_run) + "/moongen-run.log"
 
         copy_moongen_log = subprocess.Popen(cmd_moongen, shell=True, stderr=subprocess.PIPE)
         output, error = copy_moongen_log.communicate()
@@ -225,7 +249,7 @@ class Moongen(ITrafficGenerator):
             raise RuntimeError('MOONGEN: Error obtaining MoonGen log from %s within %s' \
                     % (moongen_host_ip_addr, moongen_base_dir))
 
-        cmd_gather_moongen_results = "grep 'REPORT.*total' /tmp/moongen-run.log | grep -Po '(?<=Tx Mpps:\s)[^\s]*'"
+        cmd_gather_moongen_results = "grep 'REPORT.*total' /tmp/moongen/" + str(test_run) + "/moongen-run.log | grep -Po '(?<=Tx Mpps:\s)[^\s]*'"
 
         gather_moongen_results = subprocess.Popen(cmd_gather_moongen_results, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output, error = gather_moongen_results.communicate()
@@ -234,10 +258,11 @@ class Moongen(ITrafficGenerator):
             raise RuntimeError('MOONGEN: Error parsing MoonGen log file for Tx')
 
         string_aggregate_tx_mpps_stats = output.decode(encoding='UTF-8')
-        throughput_tx_fps = '{:,.6f}'.format(float(float(string_aggregate_tx_mpps_stats) * 1000000))
+        throughput_tx_fps = float(float(string_aggregate_tx_mpps_stats) * 1000000)
+        #throughput_tx_fps = '{:,.6f}'.format(float(float(string_aggregate_tx_mpps_stats) * 1000000))
         print("MOONGEN:  Tx Mpps = %s string" % (string_aggregate_tx_mpps_stats))
         
-        cmd_gather_moongen_results = "grep 'REPORT.*total' /tmp/moongen-run.log | grep -Po '(?<=Rx Mpps:\s)[^\s]*'"
+        cmd_gather_moongen_results = "grep 'REPORT.*total' /tmp/moongen/" + str(test_run) + "/moongen-run.log | grep -Po '(?<=Rx Mpps:\s)[^\s]*'"
 
         gather_moongen_results = subprocess.Popen(cmd_gather_moongen_results, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output, error = gather_moongen_results.communicate()
@@ -246,12 +271,14 @@ class Moongen(ITrafficGenerator):
             raise RuntimeError('MOONGEN: Error parsing MoonGen log file')
 
         string_aggregate_rx_mpps_stats = output.decode(encoding='UTF-8')
-        throughput_rx_fps = '{:,.6f}'.format(float(float(string_aggregate_rx_mpps_stats) * 1000000))
-        print("MOONGEN:  Rx Mpps = %s string" % (string_aggregate_rx_mpps_stats))
+
+        # throughput_rx_fps = '{:,.6f}'.format(float(float(string_aggregate_rx_mpps_stats) * 1000000))
+        # print("MOONGEN:  Rx Mpps = %s string" % (string_aggregate_rx_mpps_stats))
+        throughput_rx_fps = float(float(string_aggregate_rx_mpps_stats) * 1000000)
         
 
 
-        cmd_gather_moongen_results = "grep -Po '(?<=frameSize:\s)[^\s]*' /tmp/moongen-run.log"
+        cmd_gather_moongen_results = "grep -Po '(?<=frameSize:\s)[^\s]*' /tmp/moongen/" + str(test_run) + "/moongen-run.log"
         gather_moongen_results = subprocess.Popen(cmd_gather_moongen_results, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output, error = gather_moongen_results.communicate()
 
@@ -259,15 +286,21 @@ class Moongen(ITrafficGenerator):
             raise RuntimeError('MOONGEN: Error parsing MoonGen log file')
 
         string_framesize = output.decode(encoding='UTF-8')
-        string_mbps = (float(string_aggregate_rx_mpps_stats) * (float(string_framesize) + 20) * 8)
-        throughput_rx_mbps = '{:,.3f}'.format(float(string_mbps))
-        string_mbps = (float(string_aggregate_tx_mpps_stats) * (float(string_framesize) + 20) * 8)
-        throughput_tx_mbps = '{:,.3f}'.format(float(string_mbps))
+        #string_mbps = (float(string_aggregate_rx_mpps_stats) * (float(string_framesize) + 20) * 8)
+        #throughput_rx_mbps = '{:,.3f}'.format(float(string_mbps))
+        string_mbps = float(string_aggregate_rx_mpps_stats) * (float(string_framesize) + 20) * 8
+        throughput_rx_mbps = float(string_mbps)
+
+        string_mbps = float(string_aggregate_tx_mpps_stats) * (float(string_framesize) + 20) * 8
+        throughput_tx_mbps = float(string_mbps)
+        #throughput_tx_mbps = '{:,.3f}'.format(float(string_mbps))
 
         # Assume for now 10G link speed
         max_theoretical_mfps = (10000000000 / 8) / (float(string_framesize) + 20)
-        throughput_rx_percent = '{:,.2f}'.format((float(string_aggregate_rx_mpps_stats) * 1000000 / max_theoretical_mfps) * 100)
-        throughput_tx_percent = '{:,.2f}'.format((float(string_aggregate_tx_mpps_stats) * 1000000 / max_theoretical_mfps) * 100)
+        #throughput_rx_percent = '{:,.2f}'.format((float(string_aggregate_rx_mpps_stats) * 1000000 / max_theoretical_mfps) * 100)
+        #throughput_tx_percent = '{:,.2f}'.format((float(string_aggregate_tx_mpps_stats) * 1000000 / max_theoretical_mfps) * 100)
+        throughput_rx_percent = float(string_aggregate_rx_mpps_stats) * 1000000 / max_theoretical_mfps * 100
+        throughput_tx_percent = float(string_aggregate_tx_mpps_stats) * 1000000 / max_theoretical_mfps * 100
 
         moongen_results = OrderedDict()
         moongen_results[ResultsConstants.THROUGHPUT_RX_FPS] = throughput_rx_fps
@@ -276,6 +309,17 @@ class Moongen(ITrafficGenerator):
         moongen_results[ResultsConstants.TX_RATE_FPS] = throughput_tx_fps
         moongen_results[ResultsConstants.TX_RATE_MBPS] = throughput_tx_mbps
         moongen_results[ResultsConstants.TX_RATE_PERCENT] = throughput_tx_percent
+
+        print("*******************************************************")
+        print("throughput_rx_fps = %f" % throughput_rx_fps)
+        print("throughput_rx_mbps = %f" % throughput_rx_mbps)
+        print("throughput_rx_percent = %f" % throughput_rx_percent)
+        print("throughput_tx_fps = %f" % throughput_tx_fps)
+        print("throughput_tx_mbps = %f" % throughput_tx_mbps)
+        print("throughput_tx_percent = %f" % throughput_tx_percent)
+        print("*******************************************************")
+
+
         return moongen_results
 
 
@@ -313,18 +357,54 @@ class Moongen(ITrafficGenerator):
                                                  traffic)
         Moongen._create_moongen_cfg_file(traffic, duration=duration, acceptable_loss_pct=lossrate)
 
-        collected_results = Moongen._run_moongen_and_collect_results()
 
+        total_throughput_rx_fps = 0
+        total_throughput_rx_mbps = 0
+        total_throughput_rx_pct = 0
+        total_throughput_tx_fps = 0
+        total_throughput_tx_mbps = 0
+        total_throughput_tx_pct = 0
+        total_min_latency_ns = 0
+        total_max_latency_ns = 0
+        total_avg_latency_ns = 0
+
+
+        for test_run in range(1,trials+1):
+            collected_results = Moongen._run_moongen_and_collect_results(test_run=test_run)
+
+            print("total_throughput_rx_fps = %f, test_run = %d divide = %f" % (total_throughput_rx_fps, test_run, (total_throughput_rx_fps / trials)))
+            total_throughput_rx_fps += float(collected_results[ResultsConstants.THROUGHPUT_RX_FPS])
+            total_throughput_rx_mbps += float(collected_results[ResultsConstants.THROUGHPUT_RX_MBPS]) 
+            total_throughput_rx_pct += float(collected_results[ResultsConstants.THROUGHPUT_RX_PERCENT]) 
+            total_throughput_tx_fps += float(collected_results[ResultsConstants.TX_RATE_FPS]) 
+            total_throughput_tx_mbps += float(collected_results[ResultsConstants.TX_RATE_MBPS]) 
+            total_throughput_tx_pct += float(collected_results[ResultsConstants.TX_RATE_PERCENT]) 
+            total_min_latency_ns = 0
+            total_max_latency_ns = 0
+            total_avg_latency_ns = 0
+
+        avg_throughput_rx_fps = total_throughput_rx_fps / trials
+        avg_throughput_rx_mbps = total_throughput_rx_mbps / trials
+        avg_throughput_rx_pct = total_throughput_rx_pct / trials
+        avg_throughput_tx_fps = total_throughput_tx_fps / trials
+        avg_throughput_tx_mbps = total_throughput_tx_mbps / trials
+        avg_throughput_tx_pct = total_throughput_tx_pct / trials
+        avg_min_latency_ns = total_min_latency_ns / trials
+        avg_max_latency_ns = total_max_latency_ns / trials
+        avg_avg_latency_ns = total_avg_latency_ns / trials
+        
+
+        print("total_throughput_rx_fps = %f, trials = %d divide = %f" % (total_throughput_rx_fps, trials, (total_throughput_rx_fps / trials)))
         results = OrderedDict()
-        results[ResultsConstants.THROUGHPUT_RX_FPS] = collected_results[ResultsConstants.THROUGHPUT_RX_FPS] 
-        results[ResultsConstants.THROUGHPUT_RX_MBPS] = collected_results[ResultsConstants.THROUGHPUT_RX_MBPS] 
-        results[ResultsConstants.THROUGHPUT_RX_PERCENT] = collected_results[ResultsConstants.THROUGHPUT_RX_PERCENT] 
-        results[ResultsConstants.TX_RATE_FPS] = collected_results[ResultsConstants.TX_RATE_FPS] 
-        results[ResultsConstants.TX_RATE_MBPS] = collected_results[ResultsConstants.TX_RATE_MBPS] 
-        results[ResultsConstants.TX_RATE_PERCENT] = collected_results[ResultsConstants.TX_RATE_PERCENT] 
-        results[ResultsConstants.MIN_LATENCY_NS] = 0
-        results[ResultsConstants.MAX_LATENCY_NS] = 0
-        results[ResultsConstants.AVG_LATENCY_NS] = 0
+        results[ResultsConstants.THROUGHPUT_RX_FPS] = '{:,.6f}'.format(avg_throughput_rx_fps)
+        results[ResultsConstants.THROUGHPUT_RX_MBPS] = '{:,.3f}'.format(avg_throughput_rx_mbps)
+        results[ResultsConstants.THROUGHPUT_RX_PERCENT] = '{:,.3f}'.format(avg_throughput_rx_pct)
+        results[ResultsConstants.TX_RATE_FPS] = '{:,.6f}'.format(avg_throughput_tx_fps)
+        results[ResultsConstants.TX_RATE_MBPS] = '{:,.3f}'.format(avg_throughput_tx_mbps)
+        results[ResultsConstants.TX_RATE_PERCENT] = '{:,.3f}'.format(avg_throughput_tx_pct)
+        results[ResultsConstants.MIN_LATENCY_NS] = '{:,.3f}'.format(avg_min_latency_ns)
+        results[ResultsConstants.MAX_LATENCY_NS] = '{:,.3f}'.format(avg_max_latency_ns)
+        results[ResultsConstants.AVG_LATENCY_NS] = '{:,.3f}'.format(avg_avg_latency_ns)
         return results
 
     def start_rfc2544_throughput(self, traffic=None, trials=3, duration=20,
