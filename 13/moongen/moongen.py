@@ -57,30 +57,29 @@ class Moongen(ITrafficGenerator):
         """
         self._logger.info("In moongen traffic_defaults method")
         return self._traffic_defaults
-    
-    
+
     @staticmethod
     def _create_moongen_cfg_file(traffic, duration=60, acceptable_loss_pct=1):
         moongen_host_ip_addr = settings.getValue('TRAFFICGEN_MOONGEN_HOST_IP_ADDR')
         moongen_base_dir = settings.getValue('TRAFFICGEN_MOONGEN_BASE_DIR')
         moongen_user = settings.getValue('TRAFFICGEN_MOONGEN_USER')
-        moongen_ports= settings.getValue('TRAFFICGEN_MOONGEN_PORTS')
-        print(traffic) 
-        print("traffic['frame_rate'] = %s" % str(traffic['frame_rate'])) 
-        print("traffic['multistream'] = %s" % str(traffic['multistream'])) 
-        print("traffic['stream_type'] = %s" % str(traffic['stream_type'])) 
-        print("traffic['l2']['srcmac'] = %s" % str(traffic['l2']['srcmac'])) 
-        print("traffic['l2']['dstmac'] = %s" % str(traffic['l2']['dstmac'])) 
-        print("traffic['l3']['proto'] = %s" % str(traffic['l3']['proto'])) 
-        print("traffic['l3']['srcip'] = %s" % str(traffic['l3']['srcip'])) 
-        print("traffic['l3']['dstip'] = %s" % str(traffic['l3']['dstip'])) 
-        print("traffic['l4']['srcport'] = %s" % str(traffic['l4']['srcport'])) 
-        print("traffic['l4']['dstport'] = %s" % str(traffic['l4']['dstport'])) 
-        print("traffic['vlan']['enabled'] = %s" % str(traffic['vlan']['enabled'])) 
-        print("traffic['vlan']['id'] = %s" % str(traffic['vlan']['id'])) 
-        print("traffic['vlan']['priority'] = %s" % str(traffic['vlan']['priority'])) 
-        print("traffic['vlan']['cfi'] = %s" % str(traffic['vlan']['cfi'])) 
-        print(traffic['l2']['framesize']) 
+        moongen_ports = settings.getValue('TRAFFICGEN_MOONGEN_PORTS')
+        print(traffic)
+        print("traffic['frame_rate'] = %s" % str(traffic['frame_rate']))
+        print("traffic['multistream'] = %s" % str(traffic['multistream']))
+        print("traffic['stream_type'] = %s" % str(traffic['stream_type']))
+        print("traffic['l2']['srcmac'] = %s" % str(traffic['l2']['srcmac']))
+        print("traffic['l2']['dstmac'] = %s" % str(traffic['l2']['dstmac']))
+        print("traffic['l3']['proto'] = %s" % str(traffic['l3']['proto']))
+        print("traffic['l3']['srcip'] = %s" % str(traffic['l3']['srcip']))
+        print("traffic['l3']['dstip'] = %s" % str(traffic['l3']['dstip']))
+        print("traffic['l4']['srcport'] = %s" % str(traffic['l4']['srcport']))
+        print("traffic['l4']['dstport'] = %s" % str(traffic['l4']['dstport']))
+        print("traffic['vlan']['enabled'] = %s" % str(traffic['vlan']['enabled']))
+        print("traffic['vlan']['id'] = %s" % str(traffic['vlan']['id']))
+        print("traffic['vlan']['priority'] = %s" % str(traffic['vlan']['priority']))
+        print("traffic['vlan']['cfi'] = %s" % str(traffic['vlan']['cfi']))
+        print(traffic['l2']['framesize'])
         out_file = open("opnfv-vsperf-cfg.lua", "wt")
         out_file.write("VSPERF {\n")
         out_file.write("testType = \"throughput\",\n")
@@ -93,8 +92,10 @@ class Moongen(ITrafficGenerator):
         out_file.write("startRate = 4\n")
         out_file.write("}" + "\n")
         out_file.close()
-        
-        copy_moongen_cfg = "scp opnfv-vsperf-cfg.lua " + moongen_user + "@" + moongen_host_ip_addr + ":" + moongen_base_dir + "/. && rm opnfv-vsperf-cfg.lua"
+
+        copy_moongen_cfg = "scp opnfv-vsperf-cfg.lua " + moongen_user + "@" + \
+                            moongen_host_ip_addr + ":" + moongen_base_dir + \
+                            "/. && rm opnfv-vsperf-cfg.lua"
         find_moongen = subprocess.Popen(copy_moongen_cfg, shell=True, stderr=subprocess.PIPE)
         output, error = find_moongen.communicate()
 
@@ -220,9 +221,9 @@ class Moongen(ITrafficGenerator):
         cmd_start_moongen = connect_moongen + cmd_moongen
         start_moongen = subprocess.Popen(cmd_start_moongen, shell=True, stderr=subprocess.PIPE)
         output, error = start_moongen.communicate()
-        print(output)
 
-        if error:
+        if start_moongen.returncode:
+            print(error)
             raise RuntimeError('MOONGEN: Error starting MoonGen program at %s within %s' \
                     % (moongen_host_ip_addr, moongen_base_dir))
 
@@ -232,7 +233,8 @@ class Moongen(ITrafficGenerator):
         output, error = moongen_create_log_dir.communicate()
         print(output)
 
-        if error:
+        if moongen_create_log_dir.returncode:
+            print(error)
             raise RuntimeError('MOONGEN: Error obtaining MoonGen log from %s within %s' \
                     % (moongen_host_ip_addr, moongen_base_dir))
 
@@ -242,31 +244,46 @@ class Moongen(ITrafficGenerator):
 
         copy_moongen_log = subprocess.Popen(cmd_moongen, shell=True, stderr=subprocess.PIPE)
         output, error = copy_moongen_log.communicate()
-        print(output)
 
-        if error:
+        if copy_moongen_log.returncode:
+            print(error)
             raise RuntimeError('MOONGEN: Error obtaining MoonGen log from %s within %s' \
                     % (moongen_host_ip_addr, moongen_base_dir))
 
-        cmd_gather_moongen_results = "grep 'REPORT.*total' /tmp/moongen/" + str(test_run) + "/moongen-run.log | grep -Po '(?<=Tx Mpps:\s)[^\s]*'"
+        cmd_gather_moongen_results = "grep 'REPORT.*total' /tmp/moongen/" + \
+                                     str(test_run) + \
+                                     "/moongen-run.log | grep -Po '(?<=Tx Mpps:\s)[^\s]*'"
 
-        gather_moongen_results = subprocess.Popen(cmd_gather_moongen_results, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        gather_moongen_results = subprocess.Popen(cmd_gather_moongen_results, \
+                                                  shell=True, \
+                                                  stdout=subprocess.PIPE, \
+                                                  stderr=subprocess.PIPE)
+
         output, error = gather_moongen_results.communicate()
 
-        if error:
+        if gather_moongen_results.returncode:
+            print(error)
             raise RuntimeError('MOONGEN: Error parsing MoonGen log file for Tx')
 
         string_aggregate_tx_mpps_stats = output.decode(encoding='UTF-8')
         throughput_tx_fps = float(float(string_aggregate_tx_mpps_stats) * 1000000)
         #throughput_tx_fps = '{:,.6f}'.format(float(float(string_aggregate_tx_mpps_stats) * 1000000))
         print("MOONGEN:  Tx Mpps = %s string" % (string_aggregate_tx_mpps_stats))
-        
-        cmd_gather_moongen_results = "grep 'REPORT.*total' /tmp/moongen/" + str(test_run) + "/moongen-run.log | grep -Po '(?<=Rx Mpps:\s)[^\s]*'"
 
-        gather_moongen_results = subprocess.Popen(cmd_gather_moongen_results, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        cmd_gather_moongen_results = (
+            "grep 'REPORT.*total' /tmp/moongen/" +
+            str(test_run) +
+            "/moongen-run.log | grep -Po '(?<=Rx Mpps:\s)[^\s]*'")
+
+        gather_moongen_results = subprocess.Popen(cmd_gather_moongen_results,
+                                                  shell=True,
+                                                  stdout=subprocess.PIPE,
+                                                  stderr=subprocess.PIPE)
+
         output, error = gather_moongen_results.communicate()
 
-        if error:
+        if gather_moongen_results.returncode:
+            print(error)
             raise RuntimeError('MOONGEN: Error parsing MoonGen log file')
 
         string_aggregate_rx_mpps_stats = output.decode(encoding='UTF-8')
@@ -274,14 +291,22 @@ class Moongen(ITrafficGenerator):
         # throughput_rx_fps = '{:,.6f}'.format(float(float(string_aggregate_rx_mpps_stats) * 1000000))
         # print("MOONGEN:  Rx Mpps = %s string" % (string_aggregate_rx_mpps_stats))
         throughput_rx_fps = float(float(string_aggregate_rx_mpps_stats) * 1000000)
-        
 
 
-        cmd_gather_moongen_results = "grep -Po '(?<=frameSize:\s)[^\s]*' /tmp/moongen/" + str(test_run) + "/moongen-run.log"
-        gather_moongen_results = subprocess.Popen(cmd_gather_moongen_results, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        cmd_gather_moongen_results = (
+            "grep -Po '(?<=frameSize:\s)[^\s]*' /tmp/moongen/" +
+            str(test_run) +
+            "/moongen-run.log")
+
+        gather_moongen_results = subprocess.Popen(cmd_gather_moongen_results,
+                                                  shell=True,
+                                                  stdout=subprocess.PIPE,
+                                                  stderr=subprocess.PIPE)
+
         output, error = gather_moongen_results.communicate()
 
-        if error:
+        if gather_moongen_results.returncode:
+            print(error)
             raise RuntimeError('MOONGEN: Error parsing MoonGen log file')
 
         string_framesize = output.decode(encoding='UTF-8')
@@ -293,68 +318,100 @@ class Moongen(ITrafficGenerator):
         string_mbps = float(string_aggregate_rx_mpps_stats) * (float(string_framesize) + 20) * 8
         throughput_rx_mbps = float(string_mbps)
 
-        string_mbps = float(string_aggregate_tx_mpps_stats) * (float(string_framesize) + 20) * 8
+        string_mbps = (float(string_aggregate_tx_mpps_stats) *
+                       (float(string_framesize) + 20) * 8)
         throughput_tx_mbps = float(string_mbps)
         #throughput_tx_mbps = '{:,.3f}'.format(float(string_mbps))
 
         # Assume for now 10G link speed
-        max_theoretical_mfps = (10000000000 / 8) / (float(string_framesize) + 20)
+        max_theoretical_mfps = (
+            (10000000000 / 8) / (float(string_framesize) + 20))
         #throughput_rx_percent = '{:,.2f}'.format((float(string_aggregate_rx_mpps_stats) * 1000000 / max_theoretical_mfps) * 100)
         #throughput_tx_percent = '{:,.2f}'.format((float(string_aggregate_tx_mpps_stats) * 1000000 / max_theoretical_mfps) * 100)
-        throughput_rx_percent = float(string_aggregate_rx_mpps_stats) * 1000000 / max_theoretical_mfps * 100
-        throughput_tx_percent = float(string_aggregate_tx_mpps_stats) * 1000000 / max_theoretical_mfps * 100
+        throughput_rx_percent = (float(string_aggregate_rx_mpps_stats) *
+                                 1000000 / max_theoretical_mfps * 100)
+
+        throughput_tx_percent = (float(string_aggregate_tx_mpps_stats) *
+                                 1000000 / max_theoretical_mfps * 100)
 
 
 
-        cmd_gather_moongen_results = "grep 'REPORT.*total' /tmp/moongen/" + str(test_run) + "/moongen-run.log | grep -Po '(?<=Tx frames:\s)[^\s]*'"
+        cmd_gather_moongen_results = (
+            "grep 'REPORT.*total' /tmp/moongen/" +
+            str(test_run) +
+            "/moongen-run.log | grep -Po '(?<=Tx frames:\s)[^\s]*'")
 
-        gather_moongen_results = subprocess.Popen(cmd_gather_moongen_results, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        gather_moongen_results = subprocess.Popen(cmd_gather_moongen_results,
+                                                  shell=True,
+                                                  stdout=subprocess.PIPE,
+                                                  stderr=subprocess.PIPE)
+
         output, error = gather_moongen_results.communicate()
 
-        if error:
-            raise RuntimeError('MOONGEN: Error parsing MoonGen log file for Tx frames')
+        if gather_moongen_results.returncode:
+            print(error)
+            raise RuntimeError(
+                'MOONGEN: Error parsing MoonGen log file for Tx frames')
 
         aggregate_tx_frames_string = output.decode(encoding='UTF-8')
         aggregate_tx_frames = int(aggregate_tx_frames_string.strip())
 
 
-        cmd_gather_moongen_results = "grep 'REPORT.*total' /tmp/moongen/" + str(test_run) + "/moongen-run.log | grep -Po '(?<=Rx Frames:\s)[^\s]*'"
+        cmd_gather_moongen_results = (
+            "grep 'REPORT.*total' /tmp/moongen/" + str(test_run) +
+            "/moongen-run.log | grep -Po '(?<=Rx Frames:\s)[^\s]*'")
 
-        gather_moongen_results = subprocess.Popen(cmd_gather_moongen_results, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        gather_moongen_results = subprocess.Popen(cmd_gather_moongen_results,
+                                                  shell=True,
+                                                  stdout=subprocess.PIPE,
+                                                  stderr=subprocess.PIPE)
+
         output, error = gather_moongen_results.communicate()
 
-        if error:
-            raise RuntimeError('MOONGEN: Error parsing MoonGen log file for Rx frames')
+        if gather_moongen_results.returncode:
+            print(error)
+            raise RuntimeError(
+                'MOONGEN: Error parsing MoonGen log file for Rx frames')
 
         aggregate_rx_frames_string = output.decode(encoding='UTF-8')
-
-
-        print("*********** aggregate_rx_frames_string START *********")
-        print(aggregate_rx_frames_string)
-        print(aggregate_rx_frames_string.strip())
-        print("*********** aggregate_rx_frames_string END *********")
         aggregate_rx_frames = float(aggregate_rx_frames_string.strip()) 
 
+        cmd_gather_moongen_results = (
+            "grep 'REPORT.*total' /tmp/moongen/" + str(test_run) +
+            "/moongen-run.log | grep -Po '(?<=frame loss:\s)[^\s]*' | " +
+            "sed 's/,$//'")
 
-
-        cmd_gather_moongen_results = "grep 'REPORT.*total' /tmp/moongen/" + str(test_run) + "/moongen-run.log | grep -Po '(?<=frame loss:\s)[^\s]*' | sed 's/,$//'"
-
-        gather_moongen_results = subprocess.Popen(cmd_gather_moongen_results, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        gather_moongen_results = subprocess.Popen(cmd_gather_moongen_results,
+                                                  shell=True,
+                                                  stdout=subprocess.PIPE,
+                                                  stderr=subprocess.PIPE)
         output, error = gather_moongen_results.communicate()
 
-        if error:
-            raise RuntimeError('MOONGEN: Error parsing MoonGen log file for frame loss count')
+        if gather_moongen_results.returncode:
+            print(error)
+            raise RuntimeError(
+                'MOONGEN: Error parsing MoonGen log file for frame loss count')
 
         frame_loss_count_string = output.decode(encoding='UTF-8')
         frame_loss_count = float(frame_loss_count_string.strip())
 
-        cmd_gather_moongen_results = "grep 'REPORT.*total' /tmp/moongen/" + str(test_run) + "/moongen-run.log | grep -o 'frame loss.*'| sed 's/%.*//' | awk {'print $4'}"
+        cmd_gather_moongen_results = (
+            "grep 'REPORT.*total' /tmp/moongen/" +
+            str(test_run) +
+            "/moongen-run.log | grep -o 'frame loss.*'| sed 's/%.*//' |" +
+            " awk {'print $4'}")
 
-        gather_moongen_results = subprocess.Popen(cmd_gather_moongen_results, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        gather_moongen_results = subprocess.Popen(cmd_gather_moongen_results,
+                                                  shell=True,
+                                                  stdout=subprocess.PIPE,
+                                                  stderr=subprocess.PIPE)
+
         output, error = gather_moongen_results.communicate()
 
-        if error:
-            raise RuntimeError('MOONGEN: Error parsing MoonGen log file for frame loss count')
+        if gather_moongen_results.returncode:
+            print(error)
+            raise RuntimeError(
+                'MOONGEN: Error parsing MoonGen log file for frame loss count')
 
         frame_loss_percent_string = output.decode(encoding='UTF-8')
 

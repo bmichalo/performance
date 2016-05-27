@@ -41,7 +41,7 @@ class TrafficControllerRFC2544(ITrafficController, IResults):
         self._traffic_started_call_count = 0
         self._trials = int(get_test_param('rfc2544_trials', 1))
         self._duration = int(get_test_param('duration', 30))
-        self._lossrate = int(get_test_param('lossrate', 0.002))
+        self._lossrate = float(get_test_param('lossrate', 0.002))
         self._results = []
 
         # If set, comma separated packet_sizes value from --test_params
