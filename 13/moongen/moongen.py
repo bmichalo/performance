@@ -20,7 +20,6 @@ import logging
 from collections import OrderedDict
 import subprocess
 import re
-import struct
 # import sys
 
 
@@ -284,22 +283,19 @@ class Moongen(ITrafficGenerator):
 
         log_file = "/tmp/moongen/" + str(test_run) + "/moongen-run.log"
 
-        with open(log_file, 'r') as fh:
-            mytext = fh.read()
+        with open(log_file, 'r') as logfile_handle:
+            mytext = logfile_handle.read()
 
 
             #
             # match.group(1) = Tx frames
             # match.group(2) = Rx frames
             # match.group(3) = Frame loss (count)
-            # match.group(4) = Frame loss (percentage) 
+            # match.group(4) = Frame loss (percentage)
             # match.group(5) = Tx Mpps
-            # match.group(6) = Rx Mpps 
+            # match.group(6) = Rx Mpps
             #
-            #match = re.search('\[REPORT\]\s+total\:\s+Tx\s+frames\:\s+(\d+)\s+Rx\s+Frames\:\s+(\d+)\s+frame\s+loss\:\s+(\d+)\,\s+(\d+\.\d+|\d+)%\s+Tx\s+Mpps\:\s+(\d+.\d+|\d+)\s+Rx\s+Mpps\:\s+(\d+\.\d+|\d+)', mytext, flags=re.IGNORECASE)
-            
-            
-            statpattern = re.compile(
+            stat_pattern = re.compile(
                 r'\[REPORT\]\s+total\:\s+'         # the line we are looking for
                 r'Tx\s+frames\:\s+(\d+)\s+'        # tx frames
                 r'Rx\s+Frames\:\s+(\d+)\s+'        # rx frames
@@ -309,13 +305,11 @@ class Moongen(ITrafficGenerator):
                 r'Rx\s+Mpps\:\s+(\d+\.\d+|\d+)',   # rx bit rate
                 re.IGNORECASE)
 
-            match = statpattern.search(mytext)
-            
-            
-            #match
+            match = stat_pattern.search(mytext)
+
             build_moongen_results = OrderedDict()
-            build_moongen_results[MoonGenResultsConstants.TX_FRAMES] = float(match.group(1)) 
-            build_moongen_results[MoonGenResultsConstants.RX_FRAMES] = float(match.group(2)) 
+            build_moongen_results[MoonGenResultsConstants.TX_FRAMES] = float(match.group(1))
+            build_moongen_results[MoonGenResultsConstants.RX_FRAMES] = float(match.group(2))
             build_moongen_results[MoonGenResultsConstants.FRAME_LOSS_COUNT] = float(match.group(3))
             build_moongen_results[MoonGenResultsConstants.FRAME_LOSS_PERCENT] = float(match.group(4))
             build_moongen_results[MoonGenResultsConstants.TX_MPPS] = float(match.group(5))
@@ -323,30 +317,66 @@ class Moongen(ITrafficGenerator):
 
             #
             # parameters_match.group(1) = Start rate
-            # parameters_match.group(2) = Number of flows 
-            # parameters_match.group(3) = Frame size 
+            # parameters_match.group(2) = Number of flows
+            # parameters_match.group(3) = Frame size
             #
-            parameters_match = re.search('\[PARAMETERS\]\s+startRate\:\s+(\d+\.\d+|\d+)\s+nrFlows\:\s+(\d+)\s+frameSize\:\s+(\d+)', mytext, flags=re.IGNORECASE)
-            parameters_match
-            build_moongen_results[MoonGenResultsConstants.START_RATE] = float(parameters_match.group(1))
-            build_moongen_results[MoonGenResultsConstants.NUMBER_OF_STREAMS] = float(parameters_match.group(2))
-            build_moongen_results[MoonGenResultsConstants.FRAME_SIZE] = float(parameters_match.group(3))
+            parameters_pattern = re.compile(
+                r'\[PARAMETERS\]\s+'                # find PARAMETERS line
+                r'startRate\:\s+(\d+\.\d+|\d+)\s+'  # Starting TX rate
+                r'nrFlows\:\s+(\d+)\s+'             # No. of flows
+                r'frameSize\:\s+(\d+)',             # Frame size
+                flags=re.IGNORECASE)
+
+            parameters_match = parameters_pattern.search(mytext)
+
+            build_moongen_results[MoonGenResultsConstants.START_RATE] = (
+                float(parameters_match.group(1)))
+
+            build_moongen_results[MoonGenResultsConstants.NUMBER_OF_STREAMS] = (
+                float(parameters_match.group(2)))
+
+            build_moongen_results[MoonGenResultsConstants.FRAME_SIZE] = (
+                float(parameters_match.group(3)))
 
         # Assume for now 10G link speed
         max_theoretical_mfps = (
             (10000000000 / 8) / (build_moongen_results[MoonGenResultsConstants.FRAME_SIZE] + 20))
 
         moongen_results = OrderedDict()
-        moongen_results[ResultsConstants.THROUGHPUT_RX_FPS] = build_moongen_results[MoonGenResultsConstants.RX_MPPS] * 1000000
-        moongen_results[ResultsConstants.THROUGHPUT_RX_MBPS] = build_moongen_results[MoonGenResultsConstants.RX_MPPS] * (build_moongen_results[MoonGenResultsConstants.FRAME_SIZE] + 20) * 8 
-        moongen_results[ResultsConstants.THROUGHPUT_RX_PERCENT] = (build_moongen_results[MoonGenResultsConstants.RX_MPPS] * 1000000 / max_theoretical_mfps * 100)
-        moongen_results[ResultsConstants.TX_RATE_FPS] = build_moongen_results[MoonGenResultsConstants.TX_MPPS] * 1000000
-        moongen_results[ResultsConstants.TX_RATE_MBPS] = build_moongen_results[MoonGenResultsConstants.TX_MPPS] * (build_moongen_results[MoonGenResultsConstants.FRAME_SIZE] + 20) * 8 
-        moongen_results[ResultsConstants.TX_RATE_PERCENT] = (build_moongen_results[MoonGenResultsConstants.TX_MPPS] * 1000000 / max_theoretical_mfps * 100) 
-        moongen_results[ResultsConstants.B2B_TX_COUNT] = build_moongen_results[MoonGenResultsConstants.TX_FRAMES]
-        moongen_results[ResultsConstants.B2B_FRAMES] = build_moongen_results[MoonGenResultsConstants.RX_FRAMES] 
-        moongen_results[ResultsConstants.B2B_FRAME_LOSS_FRAMES] = build_moongen_results[MoonGenResultsConstants.FRAME_LOSS_COUNT]
-        moongen_results[ResultsConstants.B2B_FRAME_LOSS_PERCENT] = build_moongen_results[MoonGenResultsConstants.FRAME_LOSS_PERCENT]
+
+        moongen_results[ResultsConstants.THROUGHPUT_RX_FPS] = (
+            build_moongen_results[MoonGenResultsConstants.RX_MPPS] * 1000000)
+
+        moongen_results[ResultsConstants.THROUGHPUT_RX_MBPS] = (
+            build_moongen_results[MoonGenResultsConstants.RX_MPPS] *
+            (build_moongen_results[MoonGenResultsConstants.FRAME_SIZE] + 20) * 8)
+
+        moongen_results[ResultsConstants.THROUGHPUT_RX_PERCENT] = (
+            build_moongen_results[MoonGenResultsConstants.RX_MPPS] *
+            1000000 / max_theoretical_mfps * 100)
+
+        moongen_results[ResultsConstants.TX_RATE_FPS] = (
+            build_moongen_results[MoonGenResultsConstants.TX_MPPS] * 1000000)
+
+        moongen_results[ResultsConstants.TX_RATE_MBPS] = (
+            build_moongen_results[MoonGenResultsConstants.TX_MPPS] *
+            (build_moongen_results[MoonGenResultsConstants.FRAME_SIZE] + 20) * 8)
+
+        moongen_results[ResultsConstants.TX_RATE_PERCENT] = (
+            build_moongen_results[MoonGenResultsConstants.TX_MPPS] *
+            1000000 / max_theoretical_mfps * 100)
+
+        moongen_results[ResultsConstants.B2B_TX_COUNT] = (
+            build_moongen_results[MoonGenResultsConstants.TX_FRAMES])
+
+        moongen_results[ResultsConstants.B2B_FRAMES] = (
+            build_moongen_results[MoonGenResultsConstants.RX_FRAMES])
+
+        moongen_results[ResultsConstants.B2B_FRAME_LOSS_FRAMES] = (
+            build_moongen_results[MoonGenResultsConstants.FRAME_LOSS_COUNT])
+
+        moongen_results[ResultsConstants.B2B_FRAME_LOSS_PERCENT] = (
+            build_moongen_results[MoonGenResultsConstants.FRAME_LOSS_PERCENT])
 
         return moongen_results
 
