@@ -56,13 +56,12 @@ class MoonGenResultsConstants(object):
 
 
 class Moongen(ITrafficGenerator):
-    """
-    Moongen Traffic generator wrapper
-    """
+    """Moongen Traffic generator wrapper."""
     _traffic_defaults = TRAFFIC_DEFAULTS.copy()
     _logger = logging.getLogger(__name__)
 
     def __init__(self):
+        """Moongen class constructor."""
         self._logger.info("In moongen __init__ method")
         self._params = {}
 
@@ -79,9 +78,8 @@ class Moongen(ITrafficGenerator):
         return self._traffic_defaults
 
     @staticmethod
-    def _create_moongen_cfg_file(traffic, duration=60, acceptable_loss_pct=1):
-        """
-        Create the MoonGen configuration file from VSPERF's traffic profile
+    def _create_moongen_cfg_file(traffic, duration=60, acceptable_loss_pct=1, one_shot=0):
+        """Create the MoonGen configuration file from VSPERF's traffic profile
         """
         moongen_host_ip_addr = settings.getValue('TRAFFICGEN_MOONGEN_HOST_IP_ADDR')
         moongen_base_dir = settings.getValue('TRAFFICGEN_MOONGEN_BASE_DIR')
@@ -112,6 +110,8 @@ class Moongen(ITrafficGenerator):
         out_file.write("acceptableLossPct = " + str(acceptable_loss_pct) + ",\n")
         out_file.write("frameSize = " + str(traffic['l2']['framesize']) + ",\n")
         out_file.write("ports = " + str(moongen_ports) + ",\n")
+        if one_shot:
+            out_file.write("oneShot = true,\n")
         out_file.write("startRate = 4\n")
         out_file.write("}" + "\n")
         out_file.close()
@@ -131,22 +131,27 @@ class Moongen(ITrafficGenerator):
 
 
     def connect(self):
+        """Connect to MoonGen traffic generator
+
+        Verify that MoonGen is on the system indicated by 
+        the configuration file
+        """
         self._logger.info("MOONGEN:  In MoonGen connect method...")
         moongen_host_ip_addr = settings.getValue('TRAFFICGEN_MOONGEN_HOST_IP_ADDR')
         moongen_base_dir = settings.getValue('TRAFFICGEN_MOONGEN_BASE_DIR')
         moongen_user = settings.getValue('TRAFFICGEN_MOONGEN_USER')
 
         if moongen_host_ip_addr:
-            print(moongen_host_ip_addr)
             cmd_ping = "ping -c1 " + moongen_host_ip_addr
         else:
             raise RuntimeError('MOONGEN: MoonGen host not defined')
 
         ping = subprocess.Popen(cmd_ping, shell=True, stderr=subprocess.PIPE)
         output, error = ping.communicate()
-        print(output)
 
-        if error:
+        if ping.returncode:
+            print(error)
+            print(output)
             raise RuntimeError('MOONGEN: Cannot ping MoonGen host at %s' % moongen_host_ip_addr)
 
 
@@ -162,11 +167,12 @@ class Moongen(ITrafficGenerator):
 
         self._logger.info("MOONGEN: MoonGen host successfully found...")
 
+
+
     def disconnect(self):
         """Disconnect from the traffic generator.
 
         As with :func:`connect`, this function is optional.
-
 
         Where implemented, this function should raise an exception on
         failure.
@@ -174,6 +180,8 @@ class Moongen(ITrafficGenerator):
         :returns: None
         """
         self._logger.info("MOONGEN: In moongen disconnect method")
+
+
 
     def send_burst_traffic(self, traffic=None, numpkts=100, duration=20):
         """Send a burst of traffic.
@@ -216,19 +224,58 @@ class Moongen(ITrafficGenerator):
             - Avg Latency (ns)
         """
         self._logger.info("In moongen send_cont_traffic method")
-        return NotImplementedError('Moongen continuous traffic not implemented')
+
+        self._params.clear()
+        self._params['traffic'] = self.traffic_defaults.copy()
+
+        if traffic:
+            self._params['traffic'] = merge_spec(self._params['traffic'],
+                                                 traffic)
+
+        print("BILL - duration = %s" % duration)
+
+        Moongen._create_moongen_cfg_file(traffic, duration=duration, acceptable_loss_pct=100.0, one_shot=1)
+
+
+        collected_results = Moongen.run_moongen_and_collect_results(test_run=1)
+
+        total_throughput_rx_fps = float(collected_results[ResultsConstants.THROUGHPUT_RX_FPS])
+        total_throughput_rx_mbps = float(collected_results[ResultsConstants.THROUGHPUT_RX_MBPS])
+        total_throughput_rx_pct = float(collected_results[ResultsConstants.THROUGHPUT_RX_PERCENT])
+        total_throughput_tx_fps = float(collected_results[ResultsConstants.TX_RATE_FPS])
+        total_throughput_tx_mbps = float(collected_results[ResultsConstants.TX_RATE_MBPS])
+        total_throughput_tx_pct = float(collected_results[ResultsConstants.TX_RATE_PERCENT])
+        total_min_latency_ns = 0
+        total_max_latency_ns = 0
+        total_avg_latency_ns = 0
+
+        results = OrderedDict()
+        results[ResultsConstants.THROUGHPUT_RX_FPS] = '{:,.6f}'.format(total_throughput_rx_fps)
+        results[ResultsConstants.THROUGHPUT_RX_MBPS] = '{:,.3f}'.format(total_throughput_rx_mbps)
+        results[ResultsConstants.THROUGHPUT_RX_PERCENT] = '{:,.3f}'.format(total_throughput_rx_pct)
+        results[ResultsConstants.TX_RATE_FPS] = '{:,.6f}'.format(total_throughput_tx_fps)
+        results[ResultsConstants.TX_RATE_MBPS] = '{:,.3f}'.format(total_throughput_tx_mbps)
+        results[ResultsConstants.TX_RATE_PERCENT] = '{:,.3f}'.format(total_throughput_tx_pct)
+        results[ResultsConstants.MIN_LATENCY_NS] = '{:,.3f}'.format(total_min_latency_ns)
+        results[ResultsConstants.MAX_LATENCY_NS] = '{:,.3f}'.format(total_max_latency_ns)
+        results[ResultsConstants.AVG_LATENCY_NS] = '{:,.3f}'.format(total_avg_latency_ns)
+
+        return results 
+
+
 
     def start_cont_traffic(self, traffic=None, duration=20):
-        #
-        # Non-blocking version of 'send_cont_traffic'.
-        #
-        # Start transmission and immediately return. Do not wait for
-        # results.
-        # :param traffic: Detailed "traffic" spec, i.e. IP address, VLAN tags
-        # :param duration: Time to wait to receive packets (secs)
-
+        """ Non-blocking version of 'send_cont_traffic'.
+        
+        Start transmission and immediately return. Do not wait for
+        results.
+        :param traffic: Detailed "traffic" spec, i.e. IP address, VLAN tags
+        :param duration: Time to wait to receive packets (secs)
+        """
         self._logger.info("In moongen start_cont_traffic method")
         return NotImplementedError('Moongen continuous traffic not implemented')
+
+
 
     def stop_cont_traffic(self):
         # Stop continuous transmission and return results.
@@ -238,12 +285,13 @@ class Moongen(ITrafficGenerator):
 
     @staticmethod
     def run_moongen_and_collect_results(test_run=1):
-        """
-        Execute MoonGen and transform results into VSPERF format
-        """
+        """Execute MoonGen and transform results into VSPERF format"""
+
         moongen_host_ip_addr = settings.getValue('TRAFFICGEN_MOONGEN_HOST_IP_ADDR')
         moongen_base_dir = settings.getValue('TRAFFICGEN_MOONGEN_BASE_DIR')
         moongen_user = settings.getValue('TRAFFICGEN_MOONGEN_USER')
+        
+        # Start MoonGen and create logfile of the run
         connect_moongen = "ssh " + moongen_user + "@" + moongen_host_ip_addr
         cmd_moongen = " 'cd " + moongen_base_dir + "; ./build/MoonGen examples/opnfv-vsperf.lua | tee moongen_log.txt'"
         cmd_start_moongen = connect_moongen + cmd_moongen
@@ -260,14 +308,12 @@ class Moongen(ITrafficGenerator):
 
         moongen_create_log_dir = subprocess.Popen(cmd_moongen, shell=True, stderr=subprocess.PIPE)
         output, error = moongen_create_log_dir.communicate()
-        print(output)
 
         if moongen_create_log_dir.returncode:
             print(error)
             print(output)
             raise RuntimeError('MOONGEN: Error obtaining MoonGen log from %s within %s' \
                     % (moongen_host_ip_addr, moongen_base_dir))
-
 
         cmd_moongen = " scp " + moongen_user + "@" + moongen_host_ip_addr + ":" + \
                 moongen_base_dir + "/moongen_log.txt /tmp/moongen/" + str(test_run) + "/moongen-run.log"
@@ -286,16 +332,13 @@ class Moongen(ITrafficGenerator):
         with open(log_file, 'r') as logfile_handle:
             mytext = logfile_handle.read()
 
-
-            #
             # match.group(1) = Tx frames
             # match.group(2) = Rx frames
             # match.group(3) = Frame loss (count)
             # match.group(4) = Frame loss (percentage)
             # match.group(5) = Tx Mpps
             # match.group(6) = Rx Mpps
-            #
-            stat_pattern = re.compile(
+            search_pattern = re.compile(
                 r'\[REPORT\]\s+total\:\s+'         # the line we are looking for
                 r'Tx\s+frames\:\s+(\d+)\s+'        # tx frames
                 r'Rx\s+Frames\:\s+(\d+)\s+'        # rx frames
@@ -305,7 +348,7 @@ class Moongen(ITrafficGenerator):
                 r'Rx\s+Mpps\:\s+(\d+\.\d+|\d+)',   # rx bit rate
                 re.IGNORECASE)
 
-            match = stat_pattern.search(mytext)
+            match = search_pattern.search(mytext)
 
             build_moongen_results = OrderedDict()
             build_moongen_results[MoonGenResultsConstants.TX_FRAMES] = float(match.group(1))
@@ -320,14 +363,14 @@ class Moongen(ITrafficGenerator):
             # parameters_match.group(2) = Number of flows
             # parameters_match.group(3) = Frame size
             #
-            parameters_pattern = re.compile(
+            search_pattern = re.compile(
                 r'\[PARAMETERS\]\s+'                # find PARAMETERS line
                 r'startRate\:\s+(\d+\.\d+|\d+)\s+'  # Starting TX rate
                 r'nrFlows\:\s+(\d+)\s+'             # No. of flows
                 r'frameSize\:\s+(\d+)',             # Frame size
                 flags=re.IGNORECASE)
 
-            parameters_match = parameters_pattern.search(mytext)
+            parameters_match = search_pattern.search(mytext)
 
             build_moongen_results[MoonGenResultsConstants.START_RATE] = (
                 float(parameters_match.group(1)))
