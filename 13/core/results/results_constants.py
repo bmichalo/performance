@@ -13,6 +13,7 @@
 # limitations under the License.
 """ResultsConstants class
 """
+
 class ResultsConstants(object):
     """Constant fields holder used by various IResult implementations.
     """
@@ -84,4 +85,3 @@ class ResultsConstants(object):
                 ResultsConstants.MAX_LATENCY_NS,
                 ResultsConstants.AVG_LATENCY_NS,
                 ResultsConstants.FRAME_LOSS_PERCENT]
-
