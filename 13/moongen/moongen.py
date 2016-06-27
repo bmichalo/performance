@@ -58,10 +58,6 @@ class Moongen(ITrafficGenerator):
     def create_moongen_cfg_file(self, traffic, duration=60, acceptable_loss_pct=1, one_shot=0):
         """Create the MoonGen configuration file from VSPERF's traffic profile
         """
-        #moongen_host_ip_addr = settings.getValue('TRAFFICGEN_MOONGEN_HOST_IP_ADDR')
-        #moongen_base_dir = settings.getValue('TRAFFICGEN_MOONGEN_BASE_DIR')
-        #moongen_user = settings.getValue('TRAFFICGEN_MOONGEN_USER')
-        #moongen_ports = settings.getValue('TRAFFICGEN_MOONGEN_PORTS')
         logging.debug("traffic['frame_rate'] = " + str(traffic['frame_rate']))
         logging.debug("traffic['multistream'] = " + str(traffic['multistream']))
         logging.debug("traffic['stream_type'] = " + str(traffic['stream_type']))
@@ -112,9 +108,6 @@ class Moongen(ITrafficGenerator):
         the configuration file
         """
         self._logger.info("MOONGEN:  In MoonGen connect method...")
-        #moongen_host_ip_addr = settings.getValue('TRAFFICGEN_MOONGEN_HOST_IP_ADDR')
-        #moongen_base_dir = settings.getValue('TRAFFICGEN_MOONGEN_BASE_DIR')
-        #moongen_user = settings.getValue('TRAFFICGEN_MOONGEN_USER')
 
         if self._moongen_host_ip_addr:
             cmd_ping = "ping -c1 " + self._moongen_host_ip_addr
@@ -204,7 +197,11 @@ class Moongen(ITrafficGenerator):
             self._params['traffic'] = merge_spec(self._params['traffic'],
                                                  traffic)
 
-        Moongen._create_moongen_cfg_file(self,traffic, duration=duration, acceptable_loss_pct=100.0, one_shot=1)
+        Moongen.create_moongen_cfg_file(self,
+                                        traffic,
+                                        duration=duration,
+                                        acceptable_loss_pct=100.0,
+                                        one_shot=1)
 
         collected_results = Moongen.run_moongen_and_collect_results(self, test_run=1)
 
@@ -250,15 +247,18 @@ class Moongen(ITrafficGenerator):
     def run_moongen_and_collect_results(self, test_run=1):
         """Execute MoonGen and transform results into VSPERF format"""
 
-        #moongen_host_ip_addr = settings.getValue('TRAFFICGEN_MOONGEN_HOST_IP_ADDR')
-        #moongen_base_dir = settings.getValue('TRAFFICGEN_MOONGEN_BASE_DIR')
-        #moongen_user = settings.getValue('TRAFFICGEN_MOONGEN_USER')
-
         # Start MoonGen and create logfile of the run
-        connect_moongen = "ssh " + self._moongen_user + "@" + self._moongen_host_ip_addr
-        cmd_moongen = " 'cd " + self._moongen_base_dir + "; ./build/MoonGen examples/opnfv-vsperf.lua | tee moongen_log.txt'"
+        connect_moongen = "ssh " + self._moongen_user + "@" + \
+            self._moongen_host_ip_addr
+
+        cmd_moongen = " 'cd " + self._moongen_base_dir + \
+            "; ./build/MoonGen examples/opnfv-vsperf.lua | tee moongen_log.txt'"
+
         cmd_start_moongen = connect_moongen + cmd_moongen
-        start_moongen = subprocess.Popen(cmd_start_moongen, shell=True, stderr=subprocess.PIPE)
+
+        start_moongen = subprocess.Popen(cmd_start_moongen,
+                                         shell=True, stderr=subprocess.PIPE)
+
         output, error = start_moongen.communicate()
 
         if start_moongen.returncode:
@@ -278,8 +278,10 @@ class Moongen(ITrafficGenerator):
             raise RuntimeError('MOONGEN: Error obtaining MoonGen log from %s within %s' \
                     % (self._moongen_host_ip_addr, self._moongen_base_dir))
 
-        cmd_moongen = " scp " + self._moongen_user + "@" + self._moongen_host_ip_addr + ":" + \
-                self._moongen_base_dir + "/moongen_log.txt /tmp/moongen/" + str(test_run) + "/moongen-run.log"
+        cmd_moongen = " scp " + self._moongen_user + "@" + \
+            self._moongen_host_ip_addr + ":" + \
+            self._moongen_base_dir + "/moongen_log.txt /tmp/moongen/" + \
+            str(test_run) + "/moongen-run.log"
 
         copy_moongen_log = subprocess.Popen(cmd_moongen, shell=True, stderr=subprocess.PIPE)
         output, error = copy_moongen_log.communicate()
@@ -484,9 +486,6 @@ class Moongen(ITrafficGenerator):
             Tx Rate (% linerate), Rx Rate (% linerate), Tx Count (frames),
             Back to Back Count (frames), Frame Loss (frames), Frame Loss (%)
         :rtype: :class:`Back2BackResult`
-        moongen_host_ip_addr = settings.getValue('TRAFFICGEN_MOONGEN_HOST_IP_ADDR')
-        moongen_base_dir = settings.getValue('TRAFFICGEN_MOONGEN_BASE_DIR')
-        moongen_user = settings.getValue('TRAFFICGEN_MOONGEN_USER')
         """
         self._params.clear()
         self._params['traffic'] = self.traffic_defaults.copy()
@@ -495,51 +494,80 @@ class Moongen(ITrafficGenerator):
             self._params['traffic'] = merge_spec(self._params['traffic'],
                                                  traffic)
 
-        Moongen.create_moongen_cfg_file(traffic, duration=duration, acceptable_loss_pct=lossrate)
+        Moongen.create_moongen_cfg_file(self,
+                                        traffic,
+                                        duration=duration,
+                                        acceptable_loss_pct=lossrate)
 
-        total_throughput_rx_fps = 0
-        total_throughput_rx_pct = 0
-        total_throughput_tx_fps = 0
-        total_throughput_tx_pct = 0
-        total_aggregate_tx_frames = 0
-        total_aggregate_rx_frames = 0
-        total_frame_loss_count = 0
-        total_frame_loss_pct = 0
+        results = OrderedDict()
+        results[ResultsConstants.B2B_RX_FPS] = 0
+        results[ResultsConstants.B2B_TX_FPS] = 0
+        results[ResultsConstants.B2B_RX_PERCENT] = 0
+        results[ResultsConstants.B2B_TX_PERCENT] = 0
+        results[ResultsConstants.B2B_TX_COUNT] = 0
+        results[ResultsConstants.B2B_FRAMES] = 0
+        results[ResultsConstants.B2B_FRAME_LOSS_FRAMES] = 0
+        results[ResultsConstants.B2B_FRAME_LOSS_PERCENT] = 0
+        results[ResultsConstants.SCAL_STREAM_COUNT] = 0
+        results[ResultsConstants.SCAL_STREAM_TYPE] = 0
+        results[ResultsConstants.SCAL_PRE_INSTALLED_FLOWS] = 0
 
         for test_run in range(1, trials+1):
             collected_results = Moongen.run_moongen_and_collect_results(self, test_run=test_run)
 
-            total_throughput_rx_fps += float(collected_results[ResultsConstants.THROUGHPUT_RX_FPS])
-            total_throughput_rx_pct += float(collected_results[ResultsConstants.THROUGHPUT_RX_PERCENT])
-            total_throughput_tx_fps += float(collected_results[ResultsConstants.TX_RATE_FPS])
-            total_throughput_tx_pct += float(collected_results[ResultsConstants.TX_RATE_PERCENT])
-            total_aggregate_tx_frames += int(collected_results[ResultsConstants.B2B_TX_COUNT])
-            total_aggregate_rx_frames += int(collected_results[ResultsConstants.B2B_FRAMES])
-            total_frame_loss_count += int(collected_results[ResultsConstants.B2B_FRAME_LOSS_FRAMES])
-            total_frame_loss_pct += int(collected_results[ResultsConstants.B2B_FRAME_LOSS_PERCENT])
+            results[ResultsConstants.B2B_RX_FPS] += (
+                float(collected_results[ResultsConstants.THROUGHPUT_RX_FPS]))
 
-        avg_throughput_rx_fps = total_throughput_rx_fps / trials
-        avg_throughput_rx_pct = total_throughput_rx_pct / trials
-        avg_throughput_tx_fps = total_throughput_tx_fps / trials
-        avg_throughput_tx_pct = total_throughput_tx_pct / trials
-        avg_aggregate_tx_frames = total_aggregate_tx_frames / trials
-        avg_aggregate_rx_frames = total_aggregate_rx_frames / trials
-        avg_total_frame_loss_count = total_frame_loss_count / trials
-        avg_total_frame_loss_pct = total_frame_loss_pct / trials
+            results[ResultsConstants.B2B_RX_PERCENT] += (
+                float(collected_results[ResultsConstants.THROUGHPUT_RX_PERCENT]))
 
-        results = OrderedDict()
+            results[ResultsConstants.B2B_TX_FPS] += (
+                float(collected_results[ResultsConstants.TX_RATE_FPS]))
 
-        results[ResultsConstants.B2B_RX_FPS] = avg_throughput_rx_fps
-        results[ResultsConstants.B2B_TX_FPS] = avg_throughput_tx_fps
-        results[ResultsConstants.B2B_RX_PERCENT] = avg_throughput_rx_pct
-        results[ResultsConstants.B2B_TX_PERCENT] = avg_throughput_tx_pct
-        results[ResultsConstants.B2B_TX_COUNT] = avg_aggregate_tx_frames
-        results[ResultsConstants.B2B_FRAMES] = avg_aggregate_rx_frames
-        results[ResultsConstants.B2B_FRAME_LOSS_FRAMES] = avg_total_frame_loss_count
-        results[ResultsConstants.B2B_FRAME_LOSS_PERCENT] = avg_total_frame_loss_pct
+            results[ResultsConstants.B2B_TX_PERCENT] += (
+                float(collected_results[ResultsConstants.TX_RATE_PERCENT]))
+
+            results[ResultsConstants.B2B_TX_COUNT] += (
+                int(collected_results[ResultsConstants.B2B_TX_COUNT]))
+
+            results[ResultsConstants.B2B_FRAMES] += (
+                int(collected_results[ResultsConstants.B2B_FRAMES]))
+
+            results[ResultsConstants.B2B_FRAME_LOSS_FRAMES] += (
+                int(collected_results[ResultsConstants.B2B_FRAME_LOSS_FRAMES]))
+
+            results[ResultsConstants.B2B_FRAME_LOSS_PERCENT] += (
+                int(collected_results[ResultsConstants.B2B_FRAME_LOSS_PERCENT]))
+
+        # Calculate average results
+        results[ResultsConstants.B2B_RX_FPS] = (
+            results[ResultsConstants.B2B_RX_FPS] / trials)
+
+        results[ResultsConstants.B2B_RX_PERCENT] = (
+            results[ResultsConstants.B2B_RX_PERCENT] / trials)
+
+        results[ResultsConstants.B2B_TX_FPS] = (
+            results[ResultsConstants.B2B_TX_FPS] / trials)
+
+        results[ResultsConstants.B2B_TX_PERCENT] = (
+            results[ResultsConstants.B2B_TX_PERCENT] / trials)
+
+        results[ResultsConstants.B2B_TX_COUNT] = (
+            results[ResultsConstants.B2B_TX_COUNT] / trials)
+
+        results[ResultsConstants.B2B_FRAMES] = (
+            results[ResultsConstants.B2B_FRAMES] / trials)
+
+        results[ResultsConstants.B2B_FRAME_LOSS_FRAMES] = (
+            results[ResultsConstants.B2B_FRAME_LOSS_FRAMES] / trials)
+
+        results[ResultsConstants.B2B_FRAME_LOSS_PERCENT] = (
+            results[ResultsConstants.B2B_FRAME_LOSS_PERCENT] / trials)
+
         results[ResultsConstants.SCAL_STREAM_COUNT] = 0
         results[ResultsConstants.SCAL_STREAM_TYPE] = 0
         results[ResultsConstants.SCAL_PRE_INSTALLED_FLOWS] = 0
+
         return results
 
     def start_rfc2544_back2back(self, traffic=None, trials=1, duration=20,
