@@ -38,8 +38,10 @@ class Moongen(ITrafficGenerator):
         """Moongen class constructor."""
         self._logger.info("In moongen __init__ method")
         self._params = {}
-        self._moongen_host_ip_addr = settings.getValue('TRAFFICGEN_MOONGEN_HOST_IP_ADDR')
-        self._moongen_base_dir = settings.getValue('TRAFFICGEN_MOONGEN_BASE_DIR')
+        self._moongen_host_ip_addr = (
+            settings.getValue('TRAFFICGEN_MOONGEN_HOST_IP_ADDR'))
+        self._moongen_base_dir = (
+            settings.getValue('TRAFFICGEN_MOONGEN_BASE_DIR'))
         self._moongen_user = settings.getValue('TRAFFICGEN_MOONGEN_USER')
         self._moongen_ports = settings.getValue('TRAFFICGEN_MOONGEN_PORTS')
 
@@ -55,35 +57,86 @@ class Moongen(ITrafficGenerator):
         self._logger.info("In moongen traffic_defaults method")
         return self._traffic_defaults
 
-    def create_moongen_cfg_file(self, traffic, duration=60, acceptable_loss_pct=1, one_shot=0):
+    def create_moongen_cfg_file(self, traffic, duration=60,
+                                acceptable_loss_pct=1, one_shot=0):
         """Create the MoonGen configuration file from VSPERF's traffic profile
+        :param traffic: Detailed "traffic" spec, i.e. IP address, VLAN tags
+        :param duration: The length of time to generate packet throughput
+        :param acceptable_loss: Maximum packet loss acceptable
+        :param one_shot: No RFC 2544 binary search,
+                        just packet flow at traffic specifics
         """
-        logging.debug("traffic['frame_rate'] = " + str(traffic['frame_rate']))
-        logging.debug("traffic['multistream'] = " + str(traffic['multistream']))
-        logging.debug("traffic['stream_type'] = " + str(traffic['stream_type']))
-        logging.debug("traffic['l2']['srcmac'] = " + str(traffic['l2']['srcmac']))
-        logging.debug("traffic['l2']['dstmac'] = " + str(traffic['l2']['dstmac']))
-        logging.debug("traffic['l3']['proto'] = " + str(traffic['l3']['proto']))
-        logging.debug("traffic['l3']['srcip'] = " + str(traffic['l3']['srcip']))
-        logging.debug("traffic['l3']['dstip'] = " + str(traffic['l3']['dstip']))
-        logging.debug("traffic['l4']['srcport'] = " + str(traffic['l4']['srcport']))
-        logging.debug("traffic['l4']['dstport'] = " + str(traffic['l4']['dstport']))
-        logging.debug("traffic['vlan']['enabled'] = " + str(traffic['vlan']['enabled']))
-        logging.debug("traffic['vlan']['id'] = " + str(traffic['vlan']['id']))
-        logging.debug("traffic['vlan']['priority'] = " + str(traffic['vlan']['priority']))
-        logging.debug("traffic['vlan']['cfi'] = " + str(traffic['vlan']['cfi']))
+        logging.debug("traffic['frame_rate'] = " + \
+            str(traffic['frame_rate']))
+
+        logging.debug("traffic['multistream'] = " + \
+            str(traffic['multistream']))
+
+        logging.debug("traffic['stream_type'] = " + \
+            str(traffic['stream_type']))
+
+        logging.debug("traffic['l2']['srcmac'] = " + \
+            str(traffic['l2']['srcmac']))
+
+        logging.debug("traffic['l2']['dstmac'] = " + \
+            str(traffic['l2']['dstmac']))
+
+        logging.debug("traffic['l3']['proto'] = " + \
+            str(traffic['l3']['proto']))
+
+        logging.debug("traffic['l3']['srcip'] = " + \
+            str(traffic['l3']['srcip']))
+
+        logging.debug("traffic['l3']['dstip'] = " + \
+            str(traffic['l3']['dstip']))
+
+        logging.debug("traffic['l4']['srcport'] = " + \
+            str(traffic['l4']['srcport']))
+
+        logging.debug("traffic['l4']['dstport'] = " + \
+            str(traffic['l4']['dstport']))
+
+        logging.debug("traffic['vlan']['enabled'] = " + \
+            str(traffic['vlan']['enabled']))
+
+        logging.debug("traffic['vlan']['id'] = " + \
+            str(traffic['vlan']['id']))
+
+        logging.debug("traffic['vlan']['priority'] = " + \
+            str(traffic['vlan']['priority']))
+
+        logging.debug("traffic['vlan']['cfi'] = " + \
+            str(traffic['vlan']['cfi']))
+
         logging.debug(traffic['l2']['framesize'])
+
         out_file = open("opnfv-vsperf-cfg.lua", "wt")
+
         out_file.write("VSPERF {\n")
+
         out_file.write("testType = \"throughput\",\n")
-        out_file.write("runBidirec = " + traffic['bidir'].lower() + ",\n")
-        out_file.write("searchRunTime = " + str(duration) + ",\n")
-        out_file.write("validationRunTime = " + str(duration) + ",\n")
-        out_file.write("acceptableLossPct = " + str(acceptable_loss_pct) + ",\n")
-        out_file.write("frameSize = " + str(traffic['l2']['framesize']) + ",\n")
-        out_file.write("ports = " + str(self._moongen_ports) + ",\n")
+
+        out_file.write("runBidirec = " + \
+            traffic['bidir'].lower() + ",\n")
+
+        out_file.write("searchRunTime = " + \
+            str(duration) + ",\n")
+
+        out_file.write("validationRunTime = " + \
+            str(duration) + ",\n")
+
+        out_file.write("acceptableLossPct = " + \
+            str(acceptable_loss_pct) + ",\n")
+
+        out_file.write("frameSize = " + \
+            str(traffic['l2']['framesize']) + ",\n")
+
+        out_file.write("ports = " +\
+            str(self._moongen_ports) +  ",\n")
+
         if one_shot:
             out_file.write("oneShot = true,\n")
+
         out_file.write("startRate = 4\n")
         out_file.write("}" + "\n")
         out_file.close()
@@ -154,7 +207,6 @@ class Moongen(ITrafficGenerator):
         Send a ``numpkts`` packets of traffic, using ``traffic``
         configuration, with a timeout of ``time``.
 
-        Attributes:
         :param traffic: Detailed "traffic" spec, i.e. IP address, VLAN tags
         :param numpkts: Number of packets to send
         :param duration: Time to wait to receive packets
@@ -170,9 +222,9 @@ class Moongen(ITrafficGenerator):
         return NotImplementedError('Moongen Burst traffic not implemented')
 
     def send_cont_traffic(self, traffic=None, duration=20):
-        """Send a continuous flow of traffic.r
+        """Send a continuous flow of traffic
 
-        Send packets at ``framerate``, using ``traffic`` configuration,
+        Send packets at ``frame rate``, using ``traffic`` configuration,
         until timeout ``time`` occurs.
 
         :param traffic: Detailed "traffic" spec, i.e. IP address, VLAN tags
@@ -203,28 +255,58 @@ class Moongen(ITrafficGenerator):
                                         acceptable_loss_pct=100.0,
                                         one_shot=1)
 
-        collected_results = Moongen.run_moongen_and_collect_results(self, test_run=1)
+        collected_results = Moongen.run_moongen_and_collect_results(self,
+                                                                    test_run=1)
 
-        total_throughput_rx_fps = float(collected_results[ResultsConstants.THROUGHPUT_RX_FPS])
-        total_throughput_rx_mbps = float(collected_results[ResultsConstants.THROUGHPUT_RX_MBPS])
-        total_throughput_rx_pct = float(collected_results[ResultsConstants.THROUGHPUT_RX_PERCENT])
-        total_throughput_tx_fps = float(collected_results[ResultsConstants.TX_RATE_FPS])
-        total_throughput_tx_mbps = float(collected_results[ResultsConstants.TX_RATE_MBPS])
-        total_throughput_tx_pct = float(collected_results[ResultsConstants.TX_RATE_PERCENT])
+        total_throughput_rx_fps = (
+            float(collected_results[ResultsConstants.THROUGHPUT_RX_FPS]))
+
+        total_throughput_rx_mbps = (
+            float(collected_results[ResultsConstants.THROUGHPUT_RX_MBPS]))
+
+        total_throughput_rx_pct = (
+            float(collected_results[ResultsConstants.THROUGHPUT_RX_PERCENT]))
+
+        total_throughput_tx_fps = (
+            float(collected_results[ResultsConstants.TX_RATE_FPS]))
+
+        total_throughput_tx_mbps = (
+            float(collected_results[ResultsConstants.TX_RATE_MBPS]))
+
+        total_throughput_tx_pct = (
+            float(collected_results[ResultsConstants.TX_RATE_PERCENT]))
+
         total_min_latency_ns = 0
         total_max_latency_ns = 0
         total_avg_latency_ns = 0
 
         results = OrderedDict()
-        results[ResultsConstants.THROUGHPUT_RX_FPS] = '{:,.6f}'.format(total_throughput_rx_fps)
-        results[ResultsConstants.THROUGHPUT_RX_MBPS] = '{:,.3f}'.format(total_throughput_rx_mbps)
-        results[ResultsConstants.THROUGHPUT_RX_PERCENT] = '{:,.3f}'.format(total_throughput_rx_pct)
-        results[ResultsConstants.TX_RATE_FPS] = '{:,.6f}'.format(total_throughput_tx_fps)
-        results[ResultsConstants.TX_RATE_MBPS] = '{:,.3f}'.format(total_throughput_tx_mbps)
-        results[ResultsConstants.TX_RATE_PERCENT] = '{:,.3f}'.format(total_throughput_tx_pct)
-        results[ResultsConstants.MIN_LATENCY_NS] = '{:,.3f}'.format(total_min_latency_ns)
-        results[ResultsConstants.MAX_LATENCY_NS] = '{:,.3f}'.format(total_max_latency_ns)
-        results[ResultsConstants.AVG_LATENCY_NS] = '{:,.3f}'.format(total_avg_latency_ns)
+        results[ResultsConstants.THROUGHPUT_RX_FPS] = (
+            '{:,.6f}'.format(total_throughput_rx_fps))
+
+        results[ResultsConstants.THROUGHPUT_RX_MBPS] = (
+            '{:,.3f}'.format(total_throughput_rx_mbps))
+
+        results[ResultsConstants.THROUGHPUT_RX_PERCENT] = (
+            '{:,.3f}'.format(total_throughput_rx_pct))
+
+        results[ResultsConstants.TX_RATE_FPS] = (
+            '{:,.6f}'.format(total_throughput_tx_fps))
+
+        results[ResultsConstants.TX_RATE_MBPS] = (
+            '{:,.3f}'.format(total_throughput_tx_mbps))
+
+        results[ResultsConstants.TX_RATE_PERCENT] = (
+            '{:,.3f}'.format(total_throughput_tx_pct))
+
+        results[ResultsConstants.MIN_LATENCY_NS] = (
+            '{:,.3f}'.format(total_min_latency_ns))
+
+        results[ResultsConstants.MAX_LATENCY_NS] = (
+            '{:,.3f}'.format(total_max_latency_ns))
+
+        results[ResultsConstants.AVG_LATENCY_NS] = (
+            '{:,.3f}'.format(total_avg_latency_ns))
 
         return results
 
@@ -243,10 +325,10 @@ class Moongen(ITrafficGenerator):
         # Stop continuous transmission and return results.
         self._logger.info("In moongen stop_cont_traffic method")
 
-    #@staticmethod
     def run_moongen_and_collect_results(self, test_run=1):
-        """Execute MoonGen and transform results into VSPERF format"""
-
+        """Execute MoonGen and transform results into VSPERF format
+        :param test_run: The number of tests to run
+        """
         # Start MoonGen and create logfile of the run
         connect_moongen = "ssh " + self._moongen_user + "@" + \
             self._moongen_host_ip_addr
@@ -269,7 +351,9 @@ class Moongen(ITrafficGenerator):
 
         cmd_moongen = "mkdir -p /tmp/moongen/" + str(test_run)
 
-        moongen_create_log_dir = subprocess.Popen(cmd_moongen, shell=True, stderr=subprocess.PIPE)
+        moongen_create_log_dir = subprocess.Popen(cmd_moongen,
+                                                  shell=True,
+                                                  stderr=subprocess.PIPE)
         output, error = moongen_create_log_dir.communicate()
 
         if moongen_create_log_dir.returncode:
@@ -431,7 +515,6 @@ class Moongen(ITrafficGenerator):
             total_min_latency_ns = 0
             total_max_latency_ns = 0
             total_avg_latency_ns = 0
-
 
         results = OrderedDict()
         results[ResultsConstants.THROUGHPUT_RX_FPS] = '{:,.6f}'.format(total_throughput_rx_fps / trials)
