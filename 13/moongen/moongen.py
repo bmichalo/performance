@@ -141,10 +141,16 @@ class Moongen(ITrafficGenerator):
         out_file.write("}" + "\n")
         out_file.close()
 
-        copy_moongen_cfg = "scp opnfv-vsperf-cfg.lua " + self._moongen_user + "@" + \
-                            self._moongen_host_ip_addr + ":" + self._moongen_base_dir + \
+        copy_moongen_cfg = "scp opnfv-vsperf-cfg.lua " + \
+                            self._moongen_user + "@" + \
+                            self._moongen_host_ip_addr + ":" + \
+                            self._moongen_base_dir + \
                             "/. && rm opnfv-vsperf-cfg.lua"
-        find_moongen = subprocess.Popen(copy_moongen_cfg, shell=True, stderr=subprocess.PIPE)
+
+        find_moongen = subprocess.Popen(copy_moongen_cfg,
+                                        shell=True,
+                                        stderr=subprocess.PIPE)
+
         output, error = find_moongen.communicate()
 
         if error:
@@ -173,19 +179,27 @@ class Moongen(ITrafficGenerator):
         if ping.returncode:
             self._logger.error(error)
             self._logger.error(output)
-            raise RuntimeError('MOONGEN: Cannot ping MoonGen host at ' + self._moongen_host_ip_addr)
+            raise RuntimeError('MOONGEN: Cannot ping MoonGen host at ' + \
+                               self._moongen_host_ip_addr)
 
-        connect_moongen = "ssh " + self._moongen_user + "@" + self._moongen_host_ip_addr
-        cmd_find_moongen = connect_moongen + " ls " + self._moongen_base_dir + "/examples/opnfv-vsperf.lua"
+        connect_moongen = "ssh " + self._moongen_user + \
+                          "@" + self._moongen_host_ip_addr
 
-        find_moongen = subprocess.Popen(cmd_find_moongen, shell=True, stderr=subprocess.PIPE)
+        cmd_find_moongen = connect_moongen + " ls " + \
+                           self._moongen_base_dir + "/examples/opnfv-vsperf.lua"
+
+        find_moongen = subprocess.Popen(cmd_find_moongen,
+                                        shell=True,
+                                        stderr=subprocess.PIPE)
+
         output, error = find_moongen.communicate()
 
         if find_moongen.returncode:
             self._logger.error(error)
             self._logger.error(output)
-            raise RuntimeError('MOONGEN: Cannot locate MoonGen program at %s within %s' \
-                    % (self._moongen_host_ip_addr, self._moongen_base_dir))
+            raise RuntimeError(
+                'MOONGEN: Cannot locate MoonGen program at %s within %s' \
+                % (self._moongen_host_ip_addr, self._moongen_base_dir))
 
         self._logger.info("MOONGEN: MoonGen host successfully found...")
 
@@ -346,55 +360,70 @@ class Moongen(ITrafficGenerator):
         if start_moongen.returncode:
             logging.debug(error)
             logging.debug(output)
-            raise RuntimeError('MOONGEN: Error starting MoonGen program at %s within %s' \
-                    % (self._moongen_host_ip_addr, self._moongen_base_dir))
+            raise RuntimeError(
+                'MOONGEN: Error starting MoonGen program at %s within %s' \
+                % (self._moongen_host_ip_addr, self._moongen_base_dir))
 
         cmd_moongen = "mkdir -p /tmp/moongen/" + str(test_run)
 
         moongen_create_log_dir = subprocess.Popen(cmd_moongen,
                                                   shell=True,
                                                   stderr=subprocess.PIPE)
+
         output, error = moongen_create_log_dir.communicate()
 
         if moongen_create_log_dir.returncode:
             logging.debug(error)
             logging.debug(output)
-            raise RuntimeError('MOONGEN: Error obtaining MoonGen log from %s within %s' \
-                    % (self._moongen_host_ip_addr, self._moongen_base_dir))
+            raise RuntimeError(
+                'MOONGEN: Error obtaining MoonGen log from %s within %s' \
+                % (self._moongen_host_ip_addr, self._moongen_base_dir))
 
         cmd_moongen = " scp " + self._moongen_user + "@" + \
             self._moongen_host_ip_addr + ":" + \
             self._moongen_base_dir + "/moongen_log.txt /tmp/moongen/" + \
             str(test_run) + "/moongen-run.log"
 
-        copy_moongen_log = subprocess.Popen(cmd_moongen, shell=True, stderr=subprocess.PIPE)
+        copy_moongen_log = subprocess.Popen(cmd_moongen,
+                                            shell=True,
+                                            stderr=subprocess.PIPE)
+
         output, error = copy_moongen_log.communicate()
 
         if copy_moongen_log.returncode:
             logging.debug(error)
             logging.debug(output)
-            raise RuntimeError('MOONGEN: Error obtaining MoonGen log from %s within %s' \
-                    % (self._moongen_host_ip_addr, self._moongen_base_dir))
+            raise RuntimeError(
+                'MOONGEN: Error obtaining MoonGen log from %s within %s' \
+                % (self._moongen_host_ip_addr, self._moongen_base_dir))
 
         log_file = "/tmp/moongen/" + str(test_run) + "/moongen-run.log"
 
         with open(log_file, 'r') as logfile_handle:
             mytext = logfile_handle.read()
 
+             # REPORT results line
+             # match.group(1) = Tx frames
+             # match.group(2) = Rx frames
+             # match.group(3) = Frame loss (count)
+             # match.group(4) = Frame loss (percentage)
+             # match.group(5) = Tx Mpps
+             # match.group(6) = Rx Mpps
             search_pattern = re.compile(
-                r'\[REPORT\]\s+total\:\s+'         # REPORT results line
-                r'Tx\s+frames\:\s+(\d+)\s+'        # match.group(1) = Tx frames
-                r'Rx\s+Frames\:\s+(\d+)\s+'        # match.group(2) = Rx frames
-                r'frame\s+loss\:\s+(\d+)\,'        # match.group(3) = Frame loss (count)
-                r'\s+(\d+\.\d+|\d+)%\s+'           # match.group(4) = Frame loss (percentage)
-                r'Tx\s+Mpps\:\s+(\d+.\d+|\d+)\s+'  # match.group(5) = Tx Mpps
-                r'Rx\s+Mpps\:\s+(\d+\.\d+|\d+)',   # match.group(6) = Rx Mpps
+                r'\[REPORT\]\s+total\:\s+'
+                r'Tx\s+frames\:\s+(\d+)\s+'
+                r'Rx\s+Frames\:\s+(\d+)\s+'
+                r'frame\s+loss\:\s+(\d+)\,'
+                r'\s+(\d+\.\d+|\d+)%\s+'
+                r'Tx\s+Mpps\:\s+(\d+.\d+|\d+)\s+'
+                r'Rx\s+Mpps\:\s+(\d+\.\d+|\d+)',
                 re.IGNORECASE)
 
             results_match = search_pattern.search(mytext)
 
             if not results_match:
-                logging.error('There was a problem parsing MoonGen REPORT section of MoonGen log file')
+                logging.error('There was a problem parsing ' +\
+                    'MoonGen REPORT section of MoonGen log file')
 
             moongen_results = OrderedDict()
             moongen_results[ResultsConstants.THROUGHPUT_RX_FPS] = 0
@@ -419,7 +448,8 @@ class Moongen(ITrafficGenerator):
             if parameters_match:
                 frame_size = int(parameters_match.group(1))
             else:
-                logging.error('There was a problem parsing MoonGen PARAMETERS section of MoonGen log file')
+                logging.error('There was a problem parsing MoonGen ' +\
+                    'PARAMETERS section of MoonGen log file')
                 frame_size = 0
 
         if results_match and parameters_match:
@@ -434,7 +464,8 @@ class Moongen(ITrafficGenerator):
                 (float(results_match.group(6)) * frame_size + 20) * 8)
 
             moongen_results[ResultsConstants.THROUGHPUT_RX_PERCENT] = (
-                float(results_match.group(6)) * 1000000 / max_theoretical_mfps * 100)
+                float(results_match.group(6)) * \
+                      1000000 / max_theoretical_mfps * 100)
 
             moongen_results[ResultsConstants.TX_RATE_FPS] = (
                 float(results_match.group(5)) * 1000000)
@@ -491,7 +522,10 @@ class Moongen(ITrafficGenerator):
         if traffic:
             self._params['traffic'] = merge_spec(self._params['traffic'],
                                                  traffic)
-        Moongen.create_moongen_cfg_file(self, traffic, duration=duration, acceptable_loss_pct=lossrate)
+        Moongen.create_moongen_cfg_file(self,
+                                        traffic,
+                                        duration=duration,
+                                        acceptable_loss_pct=lossrate)
 
         total_throughput_rx_fps = 0
         total_throughput_rx_mbps = 0
@@ -504,28 +538,59 @@ class Moongen(ITrafficGenerator):
         total_avg_latency_ns = 0
 
         for test_run in range(1, trials+1):
-            collected_results = Moongen.run_moongen_and_collect_results(self, test_run=test_run)
+            collected_results = (
+                Moongen.run_moongen_and_collect_results(self, test_run=test_run))
 
-            total_throughput_rx_fps += float(collected_results[ResultsConstants.THROUGHPUT_RX_FPS])
-            total_throughput_rx_mbps += float(collected_results[ResultsConstants.THROUGHPUT_RX_MBPS])
-            total_throughput_rx_pct += float(collected_results[ResultsConstants.THROUGHPUT_RX_PERCENT])
-            total_throughput_tx_fps += float(collected_results[ResultsConstants.TX_RATE_FPS])
-            total_throughput_tx_mbps += float(collected_results[ResultsConstants.TX_RATE_MBPS])
-            total_throughput_tx_pct += float(collected_results[ResultsConstants.TX_RATE_PERCENT])
+            total_throughput_rx_fps += (
+                float(collected_results[ResultsConstants.THROUGHPUT_RX_FPS]))
+
+            total_throughput_rx_mbps += (
+                float(collected_results[ResultsConstants.THROUGHPUT_RX_MBPS]))
+
+            total_throughput_rx_pct += (
+                float(collected_results[ResultsConstants.THROUGHPUT_RX_PERCENT]))
+
+            total_throughput_tx_fps += (
+                float(collected_results[ResultsConstants.TX_RATE_FPS]))
+
+            total_throughput_tx_mbps += (
+                float(collected_results[ResultsConstants.TX_RATE_MBPS]))
+
+            total_throughput_tx_pct += (
+                float(collected_results[ResultsConstants.TX_RATE_PERCENT]))
+
             total_min_latency_ns = 0
             total_max_latency_ns = 0
             total_avg_latency_ns = 0
 
         results = OrderedDict()
-        results[ResultsConstants.THROUGHPUT_RX_FPS] = '{:,.6f}'.format(total_throughput_rx_fps / trials)
-        results[ResultsConstants.THROUGHPUT_RX_MBPS] = '{:,.3f}'.format(total_throughput_rx_mbps / trials)
-        results[ResultsConstants.THROUGHPUT_RX_PERCENT] = '{:,.3f}'.format(total_throughput_rx_pct / trials)
-        results[ResultsConstants.TX_RATE_FPS] = '{:,.6f}'.format(total_throughput_tx_fps / trials)
-        results[ResultsConstants.TX_RATE_MBPS] = '{:,.3f}'.format(total_throughput_tx_mbps / trials)
-        results[ResultsConstants.TX_RATE_PERCENT] = '{:,.3f}'.format(total_throughput_tx_pct / trials)
-        results[ResultsConstants.MIN_LATENCY_NS] = '{:,.3f}'.format(total_min_latency_ns / trials)
-        results[ResultsConstants.MAX_LATENCY_NS] = '{:,.3f}'.format(total_max_latency_ns / trials)
-        results[ResultsConstants.AVG_LATENCY_NS] = '{:,.3f}'.format(total_avg_latency_ns / trials)
+        results[ResultsConstants.THROUGHPUT_RX_FPS] = (
+            '{:,.6f}'.format(total_throughput_rx_fps / trials))
+
+        results[ResultsConstants.THROUGHPUT_RX_MBPS] = (
+            '{:,.3f}'.format(total_throughput_rx_mbps / trials))
+
+        results[ResultsConstants.THROUGHPUT_RX_PERCENT] = (
+            '{:,.3f}'.format(total_throughput_rx_pct / trials))
+
+        results[ResultsConstants.TX_RATE_FPS] = (
+            '{:,.6f}'.format(total_throughput_tx_fps / trials))
+
+        results[ResultsConstants.TX_RATE_MBPS] = (
+            '{:,.3f}'.format(total_throughput_tx_mbps / trials))
+
+        results[ResultsConstants.TX_RATE_PERCENT] = (
+            '{:,.3f}'.format(total_throughput_tx_pct / trials))
+
+        results[ResultsConstants.MIN_LATENCY_NS] = (
+            '{:,.3f}'.format(total_min_latency_ns / trials))
+
+        results[ResultsConstants.MAX_LATENCY_NS] = (
+            '{:,.3f}'.format(total_max_latency_ns / trials))
+
+        results[ResultsConstants.AVG_LATENCY_NS] = (
+            '{:,.3f}'.format(total_avg_latency_ns / trials))
+
         return results
 
     def start_rfc2544_throughput(self, traffic=None, trials=3, duration=20,
@@ -535,7 +600,8 @@ class Moongen(ITrafficGenerator):
         Start transmission and immediately return. Do not wait for
         results.
         """
-        self._logger.info("MOONGEN: In moongen start_rfc2544_throughput method")
+        self._logger.info(
+            "MOONGEN: In moongen start_rfc2544_throughput method")
 
     def wait_rfc2544_throughput(self):
         """Wait for and return results of RFC2544 test.
@@ -596,7 +662,8 @@ class Moongen(ITrafficGenerator):
         results[ResultsConstants.SCAL_PRE_INSTALLED_FLOWS] = 0
 
         for test_run in range(1, trials+1):
-            collected_results = Moongen.run_moongen_and_collect_results(self, test_run=test_run)
+            collected_results = (
+                Moongen.run_moongen_and_collect_results(self, test_run=test_run))
 
             results[ResultsConstants.B2B_RX_FPS] += (
                 float(collected_results[ResultsConstants.THROUGHPUT_RX_FPS]))
@@ -661,14 +728,16 @@ class Moongen(ITrafficGenerator):
         # Start transmission and immediately return. Do not wait for results.
         #
         self._logger.info("In moongen start_rfc2544_back2back method")
-        return NotImplementedError('Moongen start back2back traffic not implemented')
+        return NotImplementedError(
+            'Moongen start back2back traffic not implemented')
 
     def wait_rfc2544_back2back(self):
         self._logger.info("In moongen wait_rfc2544_back2back method")
         #
         # Wait and set results of RFC2544 test.
         #
-        return NotImplementedError('Moongen wait back2back traffic not implemented')
+        return NotImplementedError(
+            'Moongen wait back2back traffic not implemented')
 
 if __name__ == "__main__":
     pass
